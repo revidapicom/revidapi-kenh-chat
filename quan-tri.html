@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kênh Chat</title>
+<style>
+  :root {
+    --nen:#f4f6f5; --the:#ffffff; --chu:#17201c; --mo:#5d6a64; --vien:#e1e6e3; --nhan:#2f9e44; --nhan-nhat:#e8f5eb; --tim:#7048e8; --tim-nhat:#f1edff;
+    --do:#c92a2a; --vang:#b7791f; --vang-nhat:#fdf4e3; --bong:0 1px 2px rgba(20,30,25,.06);
+    --zalo:#0068ff; --oa:#0a8f6a; --fb:#1877f2; --tg:#229ed9; --web:#2f9e44;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --nen:#111614; --the:#1a211e; --chu:#e6ece9; --mo:#94a39c; --vien:#2a3430; --nhan:#51cf66; --nhan-nhat:#1d3324; --tim:#b197fc; --tim-nhat:#2a2140;
+    --do:#ff8787; --vang:#f2c14e; --vang-nhat:#33291a; --bong:none; } }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin:0; background:var(--nen); color:var(--chu); font:15px/1.55 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--nhan); outline-offset: 2px; }
+  .an { display: none !important; }
+  .mo { color: var(--mo); font-size: 13px; }
+
+  .app { display: grid; grid-template-columns: 220px 1fr; height: 100vh; }
+  nav { background: var(--the); border-right: 1px solid var(--vien); padding: 18px 12px; display: flex; flex-direction: column; gap: 4px; }
+  nav .logo { font-weight: 700; font-size: 17px; padding: 0 10px 14px; }
+  nav .logo small { display: block; font-weight: 400; font-size: 12px; color: var(--mo); }
+  nav button { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; border: 0; border-radius: 8px; background: none; }
+  nav button:hover { background: var(--nen); }
+  nav button[aria-current="page"] { background: var(--nhan-nhat); color: var(--nhan); font-weight: 600; box-shadow: inset 3px 0 0 var(--nhan); }
+  nav .dem { margin-left: auto; background: var(--do); color: #fff; font-size: 11px; font-weight: 700; border-radius: 99px; padding: 1px 7px; }
+  nav .nhom-nav { display:flex; align-items:center; gap:6px; margin:12px 10px 2px; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--tim); }
+  nav .nhom-nav:empty { margin:6px 10px; border-top:1px solid var(--vien); }
+  nav .chan { margin-top: auto; padding: 10px; font-size: 12px; color: var(--mo); }
+  nav .chan label { display: flex; align-items: center; gap: 8px; color: var(--chu); font-size: 14px; }
+  main { overflow: auto; }
+  .trang { padding: 22px 26px 60px; max-width: 980px; }
+  h1 { font-size: 21px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 0 0 8px; }
+  .the { background: var(--the); border: 1px solid var(--vien); border-radius: 12px; padding: 16px; box-shadow: var(--bong); min-width: 0; }
+  .luoi { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); margin-top: 16px; }
+  .the.rong { grid-column: 1 / -1; }
+  .luoi .the { border-radius: 14px; padding: 18px; transition: border-color .15s, box-shadow .15s; }
+  .luoi .the:hover { border-color: #e9cdb4; box-shadow: 0 4px 14px rgba(120,70,20,.07); }
+  .dau-kenh { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .dau-kenh h2 { margin: 0; font-size: 16px; }
+  .logo-kenh { width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+  .nhan-the { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 3px; }
+  .nhan-the span { font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 1px 7px; border-radius: 99px; background: var(--nen); border: 1px solid var(--vien); color: var(--mo); }
+  .nhan-the .beta { background: var(--tim-nhat); border-color: transparent; color: var(--tim); }
+  .dau-kenh .chip { margin-left: auto; }
+  #loiGoi { margin: 14px 26px 0; padding: 12px 14px; border-radius: 12px; font-weight: 500; }
+  h1 { letter-spacing: -.01em; }
+  .the h2 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hai-cot { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
+  ol.buoc { margin: 12px 0 0; padding-left: 22px; display: grid; gap: 16px; }
+  ol.buoc > li::marker { font-weight: 700; color: var(--nhan); }
+  details > summary { cursor: pointer; }
+  .thanh-luu { position: sticky; bottom: 0; margin-top: 16px; padding: 10px 14px; display: flex; gap: 12px; align-items: center; justify-content: space-between;
+    background: var(--the); border: 1px solid var(--vien); border-radius: 12px; box-shadow: 0 -2px 10px rgba(20,30,25,.06); }
+  label.o { display: block; font-size: 13px; color: var(--mo); margin: 12px 0 4px; }
+  input:not([type=checkbox]):not([type=file]), textarea, select {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--vien); border-radius: 8px; background: var(--nen); }
+  textarea { min-height: 90px; resize: vertical; }
+  .nut { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--vien); background: var(--the); }
+  .nut.chinh { background: var(--nhan); border-color: var(--nhan); color: #fff; font-weight: 600; }
+  .nut.nho { padding: 5px 10px; font-size: 13px; }
+  .nut:disabled { opacity: .5; }
+  .hang { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 2px 9px; border-radius: 99px; background: var(--nen); border: 1px solid var(--vien); white-space: nowrap; }
+  .chip.ok { background: var(--nhan-nhat); border-color: transparent; color: var(--nhan); }
+  .chip.ok::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip.hong { background: #fdecec; border-color: #f3b9b9; color: #a32020; }
+  .canh-bao { background: #fdecec; color: #a32020; border: 1px solid #f3b9b9; border-radius: 8px; padding: 8px 10px; font-size: 13px; margin: 8px 0; }
+  .canh { border-left: 3px solid var(--vang); padding: 8px 12px; background: var(--vang-nhat); border-radius: 6px; font-size: 13px; margin: 8px 0; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; background: var(--nen); padding: 2px 6px; border-radius: 4px; word-break: break-all; }
+  .qr img { width: 220px; max-width: 100%; background: #fff; padding: 8px; border-radius: 8px; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; } td, th { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--vien); }
+  th { font-size: 12px; color: var(--mo); font-weight: 500; }
+  .so { font-variant-numeric: tabular-nums; }
+
+  .hop { display: grid; grid-template-columns: 340px 1fr; height: 100vh; }
+  .ds { border-right: 1px solid var(--vien); background: var(--the); display: flex; flex-direction: column; min-height: 0; }
+  .ds .dau { padding: 16px 14px 10px; }
+  .ds .loc { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .ds .loc button { border: 1px solid var(--vien); background: none; border-radius: 99px; padding: 3px 10px; font-size: 13px; }
+  .ds .loc button[aria-pressed="true"] { background: var(--nhan-nhat); color: var(--nhan); border-color: var(--nhan); font-weight: 600; }
+  .ds ul { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; }
+  .ds li > button { width: 100%; text-align: left; border: 0; background: none; padding: 11px 14px; display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; border-bottom: 1px solid var(--vien); }
+  .ds li > button:hover { background: var(--nen); }
+  .ds li > button[aria-current="true"] { background: var(--nhan-nhat); }
+  .av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px; position: relative; flex-shrink: 0; }
+  .av i { position: absolute; right: -3px; bottom: -3px; min-width: 16px; height: 16px; padding: 0 2px; border-radius: 8px; border: 2px solid var(--the); font-size: 8px; font-style: normal; display: grid; place-items: center; color: #fff; }
+  .ten { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tom { font-size: 13px; color: var(--mo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chua .tom { color: var(--chu); font-weight: 600; }
+  .cho-lau { display: inline-block; font-size: 11px; font-weight: 600; color: #c92a2a; }
+  #bangKhach td { vertical-align: top; } #bangKhach tr[data-khoa] { cursor: pointer; } #bangKhach tr[data-khoa]:hover td { background: var(--nhan-nhat); }
+  .gio { font-size: 11px; color: var(--mo); text-align: right; font-variant-numeric: tabular-nums; }
+  .gio b { display: inline-block; margin-top: 4px; background: var(--do); color: #fff; border-radius: 99px; padding: 0 6px; font-size: 11px; }
+  .chat { display: flex; flex-direction: column; min-height: 0; background: var(--nen); }
+  .chat .dau { background: var(--the); border-bottom: 1px solid var(--vien); padding: 12px 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .trangthai { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+  .tin { flex: 1; overflow: auto; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .b { max-width: min(560px, 80%); padding: 8px 12px; border-radius: 14px; white-space: pre-wrap; word-wrap: break-word; font-size: 14.5px; }
+  .b small { display: block; font-size: 11px; opacity: .75; margin-top: 3px; }
+  .b.khach { background: var(--the); border: 1px solid var(--vien); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .b.bot { background: var(--nhan-nhat); align-self: flex-end; border-bottom-right-radius: 4px; }
+  .b.nhan_vien { background: var(--nhan); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .b.loi { background: #fdecec; color: #a32020; border: 1px solid #f3b9b9; align-self: flex-end; font-size: 13px; border-bottom-right-radius: 4px; }
+  .soan { background: var(--the); border-top: 1px solid var(--vien); padding: 10px 14px; display: flex; gap: 8px; }
+  .soan textarea { min-height: 44px; height: 44px; }
+  .trong { margin: auto; text-align: center; color: var(--mo); max-width: 340px; padding: 20px; }
+  #quayLai { display: none; }
+
+  #thongbao { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--chu); color: var(--the); padding: 9px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9; }
+  @media (prefers-reduced-motion: reduce) { #thongbao { transition: none; } }
+
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+    nav { grid-row: 2; flex-direction: row; padding: 6px; border-right: 0; border-top: 1px solid var(--vien); overflow-x: auto; }
+    nav .logo, nav .chan, nav .nhom-nav { display: none; }
+    nav button { flex-direction: column; gap: 2px; font-size: 11px; padding: 6px 8px; min-width: 64px; align-items: center; }
+    nav .dem { position: absolute; top: 0; right: 4px; margin: 0; }
+    .hop { grid-template-columns: 1fr; height: calc(100vh - 62px); }
+    .hop.mo-chat .ds { display: none; } .hop:not(.mo-chat) .chat { display: none; }
+    #quayLai { display: inline-block; }
+    .trang { padding: 16px; }
+  }
+  body.la-nv nav button:not([data-trang="hopthu"]), body.la-nv nav .nhom-nav, body.la-nv nav .chan label, body.la-nv #dongKenh, body.la-nv #banMoi { display: none !important; }
+  body:not(.la-nv) .chi-nv { display: none; }
+  .b.ghi_chu { background: #fff6d6; color: #5c4400; border: 1px dashed #e0b84a; align-self: center; font-size: 13px; max-width: 85%; }
+  .the-k { display: inline-block; font-size: 11px; font-weight: 600; color: #fff; border-radius: 99px; padding: 0 7px; margin: 2px 3px 0 0; line-height: 17px; }
+  #dongThe { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 18px; background: var(--the); border-bottom: 1px solid var(--vien); }
+  #dongThe button { border: 1px solid var(--vien); background: none; border-radius: 99px; padding: 2px 10px; font-size: 12px; }
+  #dongThe button[aria-pressed="true"] { color: #fff; border-color: transparent; }
+  #goiY { position: absolute; bottom: 100%; left: 12px; right: 12px; max-height: 220px; overflow: auto; background: var(--the); border: 1px solid var(--vien); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.12); margin: 0; padding: 4px; list-style: none; }
+  #goiY li { padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  #goiY li[aria-selected="true"], #goiY li:hover { background: var(--nhan-nhat); }
+  .soan.la-ghi-chu textarea { background: #fff6d6; }
+  #bangThe input[type=color] { width: 38px; height: 32px; padding: 2px; }
+  @media (max-width: 760px) { body.la-nv nav .chan { display: flex; align-items: center; gap: 8px; margin: 0 0 0 auto; padding: 0 6px; } body.la-nv nav .chan #nutDangXuat { margin: 0; } }
+</style>
+</head>
+<body>
+<div id="manDangNhap" class="an" style="min-height:100vh;display:grid;place-items:center;padding:16px">
+  <div class="the" style="width:100%;max-width:360px">
+    <h1>Kênh Chat</h1>
+    <p class="mo">Chủ shop: mật khẩu in ra khi cài đặt. Nhân viên: mật khẩu chủ shop cấp riêng cho bạn.</p>
+    <input id="mk" type="password" autocomplete="current-password" placeholder="Mật khẩu" aria-label="Mật khẩu">
+    <div class="hang"><button class="nut chinh" onclick="dangNhap()">Đăng nhập</button></div>
+    <p id="loiDN" class="mo" style="color:var(--do)" role="alert"></p>
+  </div>
+</div>
+
+<div id="manChinh" class="app an">
+  <nav aria-label="Menu">
+    <div class="logo">Kênh Chat<small>Chatbot AI · RevidAPI</small></div>
+    <button data-trang="hopthu"><span aria-hidden="true">💬</span>Hộp thư<span class="dem an" id="demChuaDoc"></span></button>
+    <button data-trang="ketnoi"><span aria-hidden="true">🔌</span>Kết nối</button>
+    <div class="nhom-nav"><span aria-hidden="true">🧠</span>Bộ não của bot</div>
+    <button data-trang="tailieu"><span aria-hidden="true">📚</span>Tài liệu</button>
+    <button data-trang="hoc"><span aria-hidden="true">🎓</span>Bot tự học<span class="dem an" id="demHoc"></span></button>
+    <button data-trang="cachtraloi"><span aria-hidden="true">⚙️</span>Cách trả lời</button>
+    <div class="nhom-nav" aria-hidden="true"></div>
+    <button data-trang="thu"><span aria-hidden="true">🧪</span>Thử bot</button>
+    <button data-trang="nhanvien"><span aria-hidden="true">👥</span>Nhân viên</button>
+    <button data-trang="khachhang"><span aria-hidden="true">👤</span>Khách hàng</button>
+    <button data-trang="themau"><span aria-hidden="true">🏷️</span>Thẻ &amp; câu mẫu</button>
+    <div class="chan">
+      <div id="toiLa" class="an" style="margin-bottom:8px;color:var(--chu)"></div>
+      <label><input type="checkbox" id="batNhanh"> Bot đang bật</label>
+      <div id="dongKenh" style="margin-top:8px;display:flex;flex-direction:column;align-items:flex-start;gap:4px"></div>
+      <button class="nut nho" id="nutDangXuat" style="margin-top:10px">Đăng xuất</button>
+    </div>
+  </nav>
+
+  <main>
+    <p class="canh-bao" id="loiGoi" role="alert" hidden></p>
+    <p class="canh-bao" id="banMoi" hidden></p>
+    <section data-man="hopthu" class="hop" id="hop">
+      <div class="ds">
+        <div class="dau">
+          <h1>Hộp thư</h1>
+          <input id="tim" placeholder="Tìm tên khách hoặc nội dung…" aria-label="Tìm cuộc chat">
+          <div class="loc" role="group" aria-label="Lọc">
+            <button data-loc="" aria-pressed="true">Tất cả</button>
+            <button data-loc="chua" aria-pressed="false">Chưa đọc</button>
+            <button data-loc="tay" aria-pressed="false">Đang trả lời tay</button>
+            <button data-loc="cuatoi" aria-pressed="false" class="chi-nv">Của tôi</button>
+            <button data-loc="chuagiao" aria-pressed="false">Chưa giao</button>
+            <button data-loc="xong" aria-pressed="false">Đã xong</button>
+            <select id="locThe" aria-label="Lọc theo thẻ" style="width:auto;padding:2px 6px;font-size:13px;border-radius:99px"></select>
+            <button id="nutChuong" aria-pressed="false" title="Kêu một tiếng khi có tin khách mới">🔔 Báo tin</button>
+          </div>
+        </div>
+        <ul id="dsCuoc"></ul>
+      </div>
+      <div class="chat">
+        <div class="trong" id="chuaChon">
+          <p style="font-size:28px;margin:0" aria-hidden="true">💬</p>
+          <p>Chọn một cuộc chat để xem. Tin của khách trên Zalo, Fanpage, Telegram đều về đây — bot trả lời tự động, bạn vào trả lời tay bất cứ lúc nào.</p>
+        </div>
+        <div id="moChat" class="an" style="display:flex;flex-direction:column;min-height:0;flex:1">
+          <div class="dau">
+            <button class="nut nho" id="quayLai" aria-label="Quay lại danh sách">←</button>
+            <span id="chatAv"></span>
+            <div style="min-width:0"><div class="ten" id="chatTen"></div><div class="mo" id="chatKenh"></div></div>
+            <div class="trangthai">
+              <span id="chatTT" class="chip"></span>
+              <select id="chonGiao" class="an" aria-label="Giao cuộc cho" style="width:auto;padding:4px 6px"></select>
+              <button class="nut nho an" id="nutNhan"></button>
+              <button class="nut nho" id="nutTiepQuan"></button>
+              <button class="nut nho" id="nutXong"></button>
+            </div>
+          </div>
+          <div id="dongThe" role="group" aria-label="Thẻ khách"></div>
+          <details id="khungNho" style="background:var(--the);border-bottom:1px solid var(--vien);padding:8px 18px">
+            <summary class="mo" style="cursor:pointer">🧠 Ghi nhớ về khách <span id="tomNho"></span></summary>
+            <p class="mo" style="margin:6px 0">Bot tự ghi SĐT, email, tên, địa chỉ khi khách nhắn và dùng ở mọi lượt sau. Mỗi dòng <code>Mục: nội dung</code>.</p>
+            <textarea id="oNho" style="min-height:70px" placeholder="Tên: Chị Lan&#10;SĐT: 0901234567&#10;Ghi chú: khách sỉ, hay mua cây lớn"></textarea>
+            <div class="hang" style="margin-top:6px"><button class="nut nho" id="luuNho">Lưu ghi nhớ</button></div>
+          </details>
+          <div class="tin" id="dsTin" aria-live="polite"></div>
+          <div class="soan" id="khungSoan" style="position:relative">
+            <ul id="goiY" role="listbox" hidden></ul>
+            <label class="mo" style="display:flex;flex-direction:column;align-items:center;font-size:11px;gap:2px;cursor:pointer" title="Ghi chú nội bộ: khách không thấy">
+              <input type="checkbox" id="laGhiChu">Ghi chú</label>
+            <textarea id="traLoi" placeholder="Trả lời khách… gõ / để chèn câu mẫu (Enter gửi, Shift+Enter xuống dòng)" aria-label="Nội dung trả lời"></textarea>
+            <button class="nut chinh" id="nutGui">Gửi</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section data-man="ketnoi" class="trang an">
+      <h1>Kết nối kênh</h1>
+      <p class="mo">Nối kênh nào dùng kênh đó. Tin của mọi kênh về chung Hộp thư.</p>
+      <div class="luoi">
+        <div class="the">
+          <div class="dau-kenh"><div class="logo-kenh" style="background:var(--zalo)" aria-hidden="true">Za</div><div><h2>Zalo cá nhân</h2><div class="nhan-the"><span>Quét QR</span><span class="beta">Beta</span></div></div><span id="ttZalo" class="chip"></span></div>
+          <div class="canh">Kết nối không chính thức (như đăng nhập Zalo Web). Zalo có thể khoá tài khoản — nên dùng số Zalo phụ. Mở Zalo Web bằng số này sẽ làm bot ngắt.</div>
+          <label><input type="checkbox" id="hieuRuiRo"> Tôi hiểu rủi ro</label>
+          <div class="hang"><button class="nut chinh" onclick="quetQR()">Hiện mã QR</button><button class="nut" onclick="ngatZalo()">Ngắt</button></div>
+          <div class="qr" id="qr"></div>
+          <label class="o"><input type="checkbox" id="zaloNhom"> Trả lời trong nhóm</label>
+          <label class="o" for="zaloTen">Trong nhóm chỉ trả lời khi tin nhắc tên</label><input id="zaloTen" placeholder="vd: em Na">
+        </div>
+        <div class="the">
+          <div class="dau-kenh"><div class="logo-kenh" style="background:var(--fb)" aria-hidden="true">f</div><div><h2>Fanpage</h2><div class="nhan-the"><span>Dán token</span><span>Messenger</span></div></div><span id="ttFB" class="chip"></span></div>
+          <p class="mo">Tạo app ở developers.facebook.com → thêm Messenger → nối Trang → lấy Page Access Token. Không cần xác thực domain.</p>
+          <label class="o">Callback URL (dán vào Webhooks của app)</label><code id="whFB"></code>
+          <label class="o">Verify token</label><code id="fbVerify"></code>
+          <label class="o" for="fbSecret">App Secret (để kiểm chữ ký — nên nhập)</label><input id="fbSecret" placeholder="Chưa nhập thì ai cũng gửi tin giả được">
+          <div id="dsTrang"></div>
+          <div class="hang"><button class="nut" onclick="themTrang()">+ Thêm Trang</button></div>
+        </div>
+        <div class="the">
+          <div class="dau-kenh"><div class="logo-kenh" style="background:var(--tg)" aria-hidden="true">✈</div><div><h2>Telegram</h2><div class="nhan-the"><span>Dán token</span></div></div><span id="ttTG" class="chip"></span></div>
+          <p class="mo">Nhắn @BotFather → /newbot → dán token. Không cần gì thêm.</p>
+          <label class="o" for="tgToken">Bot token</label><input id="tgToken">
+          <label class="o"><input type="checkbox" id="tgNhom"> Trả lời trong nhóm (khi được @ hoặc nhắc tên)</label>
+          <label class="o" for="tgTen">Tên gọi trong nhóm</label><input id="tgTen">
+        </div>
+        <div class="the">
+          <div class="dau-kenh"><div class="logo-kenh" style="background:var(--web)" aria-hidden="true">💬</div><div><h2>Website</h2><div class="nhan-the"><span>Dán 1 dòng</span></div></div></div>
+          <p class="mo">Khung chat nổi ở góc website của bạn. Dán dòng dưới vào trước thẻ <code>&lt;/body&gt;</code> (WordPress: plugin "Insert Headers and Footers"). Tin khách về Hộp thư như các kênh khác.</p>
+          <code id="webMa" class="o" style="display:block;padding:8px;background:#f2f4f5;border-radius:8px;word-break:break-all;user-select:all"></code>
+          <p class="mo" id="webTam" hidden>Đang là đường hầm tạm — địa chỉ đổi khi bot khởi động lại. Gắn tên miền riêng để dùng lâu dài.</p>
+          <label class="o" for="webTen">Tên hiện trên khung</label><input id="webTen">
+          <label class="o" for="webMau">Màu</label><input id="webMau" type="color">
+          <label class="o" for="webChao">Câu chào</label><input id="webChao">
+        </div>
+        <div class="the rong">
+          <div class="dau-kenh"><div class="logo-kenh" style="background:var(--oa)" aria-hidden="true">OA</div><div><h2>Zalo OA</h2><div class="nhan-the"><span>Chính thức</span><span>Doanh nghiệp</span></div></div><span id="ttOA" class="chip"></span></div>
+          <p class="mo">Kênh chính thức cho doanh nghiệp. Zalo chỉ cho OA gửi tin tư vấn qua API khi OA <b>đã mua gói dịch vụ</b> (zalo.cloud/oa/pricing) — chưa có gói thì bot vẫn nhận tin về Hộp thư, còn trả lời thì làm tay ở oa.zalo.me.</p>
+          <p class="canh-bao" id="oaLoi" role="alert" hidden></p>
+          <ol class="buoc">
+            <li><b>Khoá ứng dụng</b> — tạo ứng dụng ở developers.zalo.me và liên kết OA.
+              <div class="hai-cot">
+                <div><label class="o" for="oaApp">App ID</label><input id="oaApp" autocomplete="off"></div>
+                <div><label class="o" for="oaSecret">Khóa bí mật của ứng dụng <span title="Ở Thiết lập chung — không phải OA Secret Key ở trang Webhook">ⓘ</span></label><input id="oaSecret" autocomplete="off"></div>
+                <div><label class="o" for="oaWhSecret">OA Secret Key <span title="Ở trang Webhook của ứng dụng Zalo — dùng để chặn tin giả gửi vào bot">ⓘ</span></label><input id="oaWhSecret" autocomplete="off" placeholder="Chưa nhập thì ai cũng gửi tin giả được"></div>
+              </div>
+              <label class="o" for="oaRefresh">Refresh token — tạo ở API Explorer, chọn đúng ứng dụng, loại OA Access Token (mỗi mã dùng một lần)</label><input id="oaRefresh" autocomplete="off">
+            </li>
+            <li><b>Webhook</b> — dán vào ứng dụng Zalo, bật sự kiện <code>user_send_text</code> và <code>oa_send_text</code>.
+              <p><code id="whOA"></code> <span id="ttTM" class="chip"></span></p>
+              <p class="mo" id="oaHamTam" hidden>Đây là đường hầm tạm: địa chỉ đổi mỗi lần bot khởi động lại, phải xác thực và dán webhook lại. Dùng lâu dài nên đặt tên miền riêng ở bước 3.</p>
+            </li>
+            <li><b>Xác thực domain</b> — Zalo chỉ gửi webhook tới domain đã xác thực.
+              <details id="theTenMien" style="margin-top:8px"><summary>Dùng tên miền riêng (địa chỉ cố định, khuyên dùng)</summary>
+                <label style="margin-top:8px;display:block"><input type="checkbox" id="tmBat"> Bật tên miền riêng</label>
+                <div id="tmKhung" hidden>
+                  <label class="o" for="tmTen">Tên miền con dành riêng cho bot</label><input id="tmTen" placeholder="chat.tenmien.vn" autocomplete="off" spellcheck="false">
+                  <p class="mo" id="tmGoiY"></p>
+                  <div class="hang"><button class="nut chinh" id="tmNut" onclick="datTenMien()">Kiểm tra &amp; dùng</button></div>
+                </div>
+                <p id="tmBao" role="status" style="white-space:pre-wrap" hidden></p>
+                <details id="tmNhatKy" hidden><summary class="mo">Nhật ký</summary><pre style="white-space:pre-wrap;font-size:12px;max-height:260px;overflow:auto"></pre></details>
+              </details>
+              <p class="mo">Ứng dụng Zalo → Xác thực domain → nhập domain của webhook ở bước 2 → chọn <b>thẻ meta</b> → dán thẻ Zalo đưa vào ô dưới → Lưu → bấm Xác thực bên Zalo. Chọn <b>tệp HTML</b> thì điền thêm tên tệp.</p>
+              <div class="hai-cot">
+                <div><label class="o" for="oaXtNoiDung">Thẻ meta / nội dung tệp xác thực</label><textarea id="oaXtNoiDung" rows="2" style="min-height:44px"></textarea></div>
+                <div><label class="o" for="oaXtTen">Tên tệp HTML (chỉ khi chọn cách tệp)</label><input id="oaXtTen" placeholder="zalo_verifierABC123.html"></div>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </div>
+      <div class="thanh-luu"><span class="mo">Token và phiên đăng nhập chỉ lưu trên máy này.</span><button class="nut chinh" onclick="luu()">Lưu kết nối</button></div>
+    </section>
+
+    <section data-man="tailieu" class="trang an">
+      <h1>Tài liệu</h1>
+      <p class="mo">Bảng giá, chính sách, FAQ, catalogue… Bot chỉ đưa cho AI tối đa 3 đoạn khớp nhất với câu hỏi, nên tài liệu dài bao nhiêu cũng không làm tăng tiền mỗi tin.</p>
+      <div class="the" style="margin-top:16px">
+        <label class="o" for="tlTep">Chọn tệp PDF, .txt, .md, .csv (tới 60 MB)</label>
+        <input id="tlTep" type="file" accept=".pdf,.txt,.md,.csv" multiple>
+        <label class="o" for="tlChu">…hoặc dán chữ</label><textarea id="tlChu" placeholder="Dán bảng giá, chính sách…"></textarea>
+        <label class="o" for="tlTen">Tên (khi dán chữ)</label><input id="tlTen" placeholder="bang-gia">
+        <label class="o" for="tlUrl">…hoặc đọc từ trang web</label><input id="tlUrl" placeholder="https://shop-cua-ban.vn/chinh-sach">
+        <div class="hang"><button class="nut chinh" onclick="themTaiLieu()">Thêm tài liệu</button><span id="ttTL" class="mo" role="status"></span></div>
+      </div>
+      <div class="the" style="margin-top:14px">
+        <table><thead><tr><th>Tài liệu</th><th class="so">Đoạn</th><th class="so">Ký tự</th><th></th></tr></thead><tbody id="dsTL"></tbody></table>
+      </div>
+    </section>
+
+    <section data-man="hoc" class="trang an">
+      <h1>Bot tự học</h1>
+      <p class="mo">Mỗi khi bạn trả lời tay một câu khách hỏi, cặp hỏi–đáp nằm ở đây chờ duyệt. Câu khách hỏi mà tài liệu chưa có cũng được ghi lại — điền câu trả lời rồi duyệt, lần sau bot tự trả lời đúng. Mọi câu đã duyệt gom vào tài liệu <code>hoi-dap-da-hoc.txt</code>.</p>
+      <h2 style="margin-top:18px">Chờ duyệt <span class="mo" id="nCho"></span></h2><div id="dsCho"></div>
+      <h2 style="margin-top:18px">Tài liệu chưa có <span class="mo" id="nThieu"></span></h2><div id="dsThieu"></div>
+      <h2 style="margin-top:18px">Đã học <span class="mo" id="nDuyet"></span></h2><div id="dsDuyet"></div>
+    </section>
+
+    <section data-man="cachtraloi" class="trang an">
+      <h1>Cách trả lời</h1>
+      <div class="the" style="margin-top:16px">
+        <label class="o" for="vaiTro">Bot là ai, xưng hô thế nào (ngắn gọn — càng dài càng tốn token mỗi tin)</label><textarea id="vaiTro"></textarea>
+        <label class="o" for="model">Model AI</label>
+        <select id="model">
+          <option value="deepseek-v4-flash">deepseek-v4-flash — rẻ nhất, đủ cho tư vấn</option>
+          <option value="deepseek-v4.1-flash">deepseek-v4.1-flash</option>
+          <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+          <option value="kimi-k3">kimi-k3</option>
+          <option value="claude-sonnet-5-5">claude-sonnet-5-5 — hay nhất, đắt hơn</option>
+        </select>
+        <label class="o" for="hoiNhanh">Hỏi nhanh — trả ngay, không tốn token. Mỗi dòng: <code>từ khoá|từ khoá khác => câu trả lời</code></label>
+        <textarea id="hoiNhanh" placeholder="dia chi|o dau => Shop ở 12 Lê Lợi, Q1. Mở cửa 8h-22h."></textarea>
+        <label class="o" for="gio">Giờ bot hoạt động (vd 08:00-22:00, để trống = cả ngày)</label><input id="gio">
+        <label class="o" for="ngoaiGio">Câu trả lời ngoài giờ (trống = im lặng)</label><input id="ngoaiGio">
+        <label class="o" for="khiLoi">Câu trả lời khi AI lỗi (trống = im lặng)</label><input id="khiLoi">
+        <label class="o" style="margin-top:12px"><input type="checkbox" id="chuyenChu"> Câu bot không biết → hỏi chủ qua Zalo/Telegram, chủ trả lời là khách nhận được</label>
+        <p class="mo" id="chuNoi"></p>
+        <label class="o" for="cauCho">Câu bot nói với khách trong lúc chờ chủ</label><input id="cauCho" placeholder="Dạ câu này em xin phép kiểm tra lại rồi báo anh/chị ngay ạ.">
+        <details style="margin-top:12px"><summary class="mo">Nâng cao</summary>
+          <label class="o" for="khoa">API key RevidAPI</label><input id="khoa">
+          <label class="o" for="toiDaRa">Độ dài trả lời tối đa (token)</label><input id="toiDaRa" type="number" min="300" max="2000">
+          <label class="o" for="modelDuPhong">Model dự phòng khi model chính chậm</label><select id="modelDuPhong"><option value="">Không dùng</option><option value="kimi-k3">kimi-k3</option><option value="deepseek-v4.1-flash">deepseek-v4.1-flash</option><option value="gemini-3.8-flash">gemini-3.8-flash</option></select>
+          <label class="o" for="hanGiay">Chờ model chính tối đa (giây)</label><input id="hanGiay" type="number" min="8" max="90">
+        </details>
+        <div class="hang"><button class="nut chinh" onclick="luu()">Lưu</button></div>
+      </div>
+    </section>
+
+    <section data-man="thu" class="trang an">
+      <h1>Thử bot</h1>
+      <p class="mo">Gõ như khách hàng để xem bot trả lời thế nào trước khi bật cho khách thật. Lượt thử vẫn tính token.</p>
+      <div class="the" style="margin-top:16px">
+        <input id="cauThu" placeholder="shop có giao hàng tỉnh không?" aria-label="Câu hỏi thử">
+        <div class="hang"><button class="nut chinh" onclick="thu()">Gửi thử</button></div>
+        <p id="kqThu" style="white-space:pre-wrap" role="status"></p>
+      </div>
+    </section>
+    <section data-man="nhanvien" class="trang an">
+      <h1>Nhân viên</h1>
+      <p class="mo">Mỗi nhân viên có mật khẩu riêng, chỉ thấy Hộp thư: cuộc được giao cho mình và cuộc chưa giao ai. Không xem được khoá API, tài liệu hay cài đặt bot.</p>
+      <div class="the" style="margin-top:16px">
+        <label><input type="checkbox" id="chiaTuDong"> Tự chia khách mới cho nhân viên đang ít việc nhất (24 giờ qua)</label>
+        <p class="mo" style="margin:6px 0 0">Tắt thì khách mới nằm ở "Chưa giao" — ai trả lời trước thì nhận cuộc đó.</p>
+      </div>
+      <div class="the" style="margin-top:12px">
+        <div class="hang" style="margin-top:0"><input id="nvTen" placeholder="Tên nhân viên, vd. Lan" aria-label="Tên nhân viên" maxlength="40"><button class="nut chinh" id="nutThemNv">Thêm</button></div>
+        <p id="nvMkMoi" class="canh-bao" hidden></p>
+        <table style="margin-top:10px"><tbody id="dsNv"></tbody></table>
+      </div>
+      <div class="the" style="margin-top:12px">
+        <label><input type="checkbox" id="botImKhiGiao"> Bot im ở cuộc đã giao nhân viên (chỉ trả lời cuộc chưa giao)</label>
+      </div>
+      <div class="the" style="margin-top:12px">
+        <div class="hang" style="margin-top:0;justify-content:space-between"><b>Thống kê</b>
+          <select id="tkNgay" style="width:auto" aria-label="Khoảng thời gian"><option value="1">Hôm nay (24 giờ)</option><option value="7" selected>7 ngày</option><option value="30">30 ngày</option></select></div>
+        <div id="tkBang" style="overflow-x:auto"></div>
+      </div>
+      <div class="the" style="margin-top:12px">
+        <b>Nhân viên mở ở đâu?</b>
+        <ul id="dcNv" class="mo" style="margin:6px 0 0;padding-left:18px"></ul>
+      </div>
+    </section>
+    <section data-man="khachhang" class="trang an">
+      <h1>Khách hàng</h1>
+      <p class="mo">Mỗi người từng nhắn một dòng. Tên, SĐT, email, địa chỉ do bot tự ghi khi khách nhắn (sửa ở ô "Ghi nhớ về khách" trong cuộc chat). Lọc theo thẻ rồi <b>Xuất CSV</b> để remarketing: gửi Zalo ZNS/SMS theo SĐT, tạo tệp đối tượng quảng cáo Facebook/Google theo SĐT, email.</p>
+      <div class="hang" style="flex-wrap:wrap">
+        <input id="khTim" placeholder="Tìm tên, SĐT, địa chỉ…" aria-label="Tìm khách" style="flex:1;min-width:180px">
+        <select id="khThe" aria-label="Lọc theo thẻ" style="width:auto"></select>
+        <label class="o" style="white-space:nowrap"><input type="checkbox" id="khSdt"> Có SĐT</label>
+        <button class="nut chinh" id="khXuat">⬇ Xuất CSV</button>
+      </div>
+      <p class="mo" id="khDem" style="margin:8px 0"></p>
+      <div style="overflow-x:auto"><table id="bangKhach"><thead><tr><th>Tên</th><th>SĐT</th><th>Email</th><th>Địa chỉ</th><th>Thẻ</th><th>Kênh</th><th class="so">Nhắn lần cuối</th></tr></thead><tbody></tbody></table></div>
+    </section>
+    <section data-man="themau" class="trang an">
+      <h1>Thẻ &amp; câu mẫu</h1>
+      <p class="mo">Thẻ để phân loại khách (một khách gắn nhiều thẻ, lọc theo thẻ ở Hộp thư). Ô từ khoá: khách nhắn có cụm đó (không cần dấu, cách nhau dấu phẩy) thì thẻ tự gắn. Câu mẫu: trong ô trả lời gõ <code>/</code> + tên tắt để chèn nhanh. Nhân viên dùng chung.</p>
+      <div class="the" style="margin-top:16px">
+        <b>Thẻ khách</b>
+        <table style="margin-top:8px"><tbody id="bangThe"></tbody></table>
+        <div class="hang"><button class="nut nho" id="themThe">+ Thêm thẻ</button></div>
+      </div>
+      <div class="the" style="margin-top:12px">
+        <b>Câu trả lời mẫu</b>
+        <table style="margin-top:8px"><tbody id="bangMau"></tbody></table>
+        <div class="hang"><button class="nut nho" id="themMau">+ Thêm câu mẫu</button></div>
+      </div>
+      <div class="hang"><button class="nut chinh" id="luuTheMau">Lưu</button></div>
+    </section>
+  </main>
+</div>
+<div id="thongbao" role="status"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const KENH = { zalo: ["Zalo", "var(--zalo)", "Z"], "zalo-oa": ["Zalo OA", "var(--oa)", "OA"], fb: ["Fanpage", "var(--fb)", "f"], telegram: ["Telegram", "var(--tg)", "T"], web: ["Website", "var(--web)", "W"] };
+let TT = null, DS = [], CHON = null, LOC = "", hoiQR = null, NV = [], TOI = { vai: "chu" }, THE = [], MAU = [];
+const theHtml = (ids) => (ids || []).map((id) => THE.find((t) => t.id === id)).filter(Boolean)
+  .map((t) => `<span class="the-k" style="background:${esc(t.mau)}">${esc(t.ten)}</span>`).join("");
+const tenNv = (id) => NV.find((x) => x.id === id)?.ten || "nhân viên đã xoá";
+
+function bao(s) { const t = $("thongbao"); t.textContent = s; t.style.opacity = 1; clearTimeout(bao.h); bao.h = setTimeout(() => t.style.opacity = 0, 2400); }
+async function goi(duong, than) {
+  const r = await fetch(duong, than === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(than) });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && duong !== "/api/dang-nhap") { hienMan(false); throw new Error("Phiên đăng nhập hết hạn."); }
+  if (!r.ok) throw new Error(j.loi || "Lỗi " + r.status);
+  return j;
+}
+function hienMan(vao) { $("manDangNhap").classList.toggle("an", vao); $("manChinh").classList.toggle("an", !vao); }
+
+async function dangNhap() {
+  try { await goi("/api/dang-nhap", { matKhau: $("mk").value }); await batDau(); }
+  catch (e) { $("loiDN").textContent = e.message; }
+}
+$("mk").addEventListener("keydown", (e) => e.key === "Enter" && dangNhap());
+
+function moTrang(ten) {
+  document.querySelectorAll("nav [data-trang]").forEach((b) => {
+    if (b.dataset.trang === ten) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  document.querySelectorAll("[data-man]").forEach((s) => s.classList.toggle("an", s.dataset.man !== ten));
+  try { localStorage.setItem("kc-trang", ten); } catch {}
+  if (ten === "khachhang") taiKhach();
+  if (ten === "themau") hienTheMau();
+}
+document.querySelectorAll("nav [data-trang]").forEach((b) => b.onclick = () => moTrang(b.dataset.trang));
+
+function chip(el, tt) { el.textContent = tt; el.className = "chip" + (tt === "đang chạy" ? " ok" : /lỗi/.test(tt) ? " hong" : ""); }
+async function taiTrangThai(dienForm) {
+  TT = await goi("/api/trang-thai");
+  NV = TT.nhanVien || TT.cauHinh?.nhanVien || [];
+  THE = TT.the || TT.cauHinh?.the || []; MAU = TT.mau || TT.cauHinh?.mau || [];
+  const lt = $("locThe"), v = lt.value;
+  lt.innerHTML = `<option value="">Mọi thẻ</option>` + THE.map((t) => `<option value="${esc(t.id)}">${esc(t.ten)}</option>`).join(""); lt.value = THE.some((t) => t.id === v) ? v : "";
+  TOI = TT.toi || { vai: "chu" };
+  baoTinMoi(TT.chuaDoc || 0);
+  document.body.classList.toggle("la-nv", TOI.vai === "nv");
+  $("toiLa").textContent = TOI.vai === "nv" ? "👤 " + TOI.ten : ""; $("toiLa").classList.toggle("an", TOI.vai !== "nv");
+  $("demChuaDoc").textContent = TT.chuaDoc; $("demChuaDoc").classList.toggle("an", !TT.chuaDoc);
+  if (TOI.vai === "nv") return;
+  hienNhanVien();
+  const c = TT.cauHinh, goc = TT.webhook.goc || "(đang mở đường HTTPS — đợi vài giây)";
+  $("oaLoi").textContent = TT.loiOA || ""; $("oaLoi").hidden = !TT.loiOA;
+  $("loiGoi").textContent = TT.loiGoi ? "⚠ " + TT.loiGoi : ""; $("loiGoi").hidden = !TT.loiGoi;
+  $("banMoi").hidden = !TT.banMoi && !TT.loiCapNhat;
+  if (TT.banMoi || TT.loiCapNhat) $("banMoi").innerHTML = TT.loiCapNhat ? "⚠ Cập nhật lỗi: " + esc(TT.loiCapNhat)
+    : `Có bản mới ${esc(TT.banMoi)} (đang dùng ${esc(TT.ban)}): bot đọc ảnh, đọc link, gửi ảnh sản phẩm. <button id="nutCapNhat">Cập nhật</button>`;
+  if ($("nutCapNhat")) $("nutCapNhat").onclick = async (e) => {
+    e.target.disabled = true; e.target.textContent = "Đang cập nhật…";
+    try { await goi("/api/cap-nhat", {}); } catch { /* lỗi hiện ở dòng trên sau khi tải lại */ }
+    setTimeout(() => location.reload(), 6000);
+  };
+  chip($("ttZalo"), TT.kenh.zalo); chip($("ttOA"), TT.kenh.zaloOA); chip($("ttFB"), TT.kenh.facebook); chip($("ttTG"), TT.kenh.telegram);
+  $("dongKenh").innerHTML = [["Zalo", TT.kenh.zalo], ["Zalo OA", TT.kenh.zaloOA], ["Fanpage", TT.kenh.facebook], ["Telegram", TT.kenh.telegram]]
+    .map(([k, v]) => `<span class="chip ${v === "đang chạy" ? "ok" : ""}" title="${esc(v)}">${k}</span>`).join("");
+  $("demChuaDoc").textContent = TT.chuaDoc; $("demChuaDoc").classList.toggle("an", !TT.chuaDoc);
+  $("batNhanh").checked = c.bat;
+  $("qr").innerHTML = TT.qr ? `<p class="mo">Mở Zalo trên điện thoại → biểu tượng QR → quét</p><img alt="Mã QR đăng nhập Zalo" src="${TT.qr}">` : "";
+  $("whOA").textContent = goc + TT.webhook.zaloOA; $("oaHamTam").hidden = !/trycloudflare\.com/.test(goc); $("whFB").textContent = goc + TT.webhook.facebook; $("fbVerify").textContent = c.facebook.maXacMinh;
+  $("dsTL").innerHTML = TT.taiLieu.map((t) => `<tr><td>${esc(t.ten)}</td><td class="so">${t.doan}</td><td class="so">${t.kyTu.toLocaleString("vi-VN")}</td>
+    <td style="text-align:right"><button class="nut nho" data-xoa="${esc(t.ten)}">Xoá</button></td></tr>`).join("")
+    || `<tr><td colspan="4" class="mo">Chưa có tài liệu. Bot vẫn trả lời theo vai trò, nhưng chưa biết giá và chính sách riêng của bạn.</td></tr>`;
+  hienTenMien(dienForm);
+  if (!dienForm) return;
+  $("khoa").value = c.khoa; $("model").value = c.model; $("vaiTro").value = c.vaiTro; $("toiDaRa").value = c.toiDaRa; $("modelDuPhong").value = c.modelDuPhong || ""; $("hanGiay").value = c.hanGiay || 12;
+  $("gio").value = c.gio; $("ngoaiGio").value = c.ngoaiGio; $("khiLoi").value = c.khiLoi;
+  $("chuyenChu").checked = !!c.chuyenChu; $("cauCho").value = c.cauCho || "";
+  $("chuNoi").innerHTML = c.baoChu?.kenh
+    ? `Đang báo về: <b>${esc(c.baoChu.ten || c.baoChu.kenh)}</b> (${esc(c.baoChu.kenh)}). Muốn đổi người nhận: nhắn mã <code>${esc(c.maChu)}</code> từ tài khoản mới tới bot.`
+    : `Chưa nối. Từ Zalo hoặc Telegram cá nhân của bạn, nhắn mã <code>${esc(c.maChu)}</code> tới bot (Zalo của shop hoặc bot Telegram) — bot báo "Đã nối" là xong. Trả lời khách bằng cách gõ <code>#số nội dung</code>.`;
+  $("hoiNhanh").value = (c.hoiNhanh || []).map((h) => `${h.khi} => ${h.tra}`).join("\n");
+  $("zaloNhom").checked = c.zalo.traLoiNhom; $("zaloTen").value = c.zalo.tenGoi;
+  $("oaApp").value = c.zaloOA.appId || ""; $("oaSecret").value = c.zaloOA.secretKey || ""; $("oaWhSecret").value = c.zaloOA.oaSecretKey || ""; $("oaRefresh").value = c.zaloOA.refreshToken || "";
+  $("oaXtNoiDung").value = c.zaloOA.xacThucNoiDung || ""; $("oaXtTen").value = c.zaloOA.xacThucTen || "";
+  $("fbSecret").value = c.facebook.appSecret || "";
+  $("dsTrang").innerHTML = ""; (c.facebook.trang || []).forEach((t) => themTrang(t));
+  $("webMa").textContent = `<script src="${goc}/web/widget.js" async><\/script>`; $("webTam").hidden = !/trycloudflare\.com/.test(goc);
+  $("webTen").value = c.web?.ten || ""; $("webMau").value = c.web?.mau || "#2f9e44"; $("webChao").value = c.web?.chao || "";
+  $("tgToken").value = c.telegram.token; $("tgNhom").checked = c.telegram.traLoiNhom; $("tgTen").value = c.telegram.tenGoi;
+}
+$("dsTL").addEventListener("click", async (e) => {
+  const ten = e.target.dataset?.xoa; if (!ten || !confirm("Xoá tài liệu " + ten + "?")) return;
+  await goi("/api/tai-lieu/xoa", { ten }); taiTrangThai(); bao("Đã xoá " + ten);
+});
+
+function themTrang(t = {}) {
+  const d = document.createElement("div"); d.className = "trang-fb";
+  d.innerHTML = `<label class="o">Page ID</label><input class="tId" value="${esc(t.id)}"><label class="o">Tên Trang</label><input class="tTen" value="${esc(t.ten)}">
+    <label class="o">Page Access Token</label><input class="tTok" value="${esc(t.token)}">`;
+  $("dsTrang").appendChild(d);
+}
+function gom() {
+  return {
+    bat: $("batNhanh").checked, khoa: $("khoa").value, model: $("model").value, vaiTro: $("vaiTro").value, toiDaRa: +$("toiDaRa").value, modelDuPhong: $("modelDuPhong").value, hanGiay: +$("hanGiay").value,
+    gio: $("gio").value, ngoaiGio: $("ngoaiGio").value, khiLoi: $("khiLoi").value,
+    chuyenChu: $("chuyenChu").checked, cauCho: $("cauCho").value,
+    hoiNhanh: $("hoiNhanh").value.split("\n").map((d) => d.split("=>")).filter((x) => x.length === 2).map(([k, v]) => ({ khi: k.trim(), tra: v.trim() })),
+    boQua: TT?.cauHinh?.boQua || [],
+    zalo: { traLoiNhom: $("zaloNhom").checked, tenGoi: $("zaloTen").value },
+    zaloOA: { appId: $("oaApp").value, secretKey: $("oaSecret").value, oaSecretKey: $("oaWhSecret").value, refreshToken: $("oaRefresh").value, xacThucNoiDung: $("oaXtNoiDung").value, xacThucTen: $("oaXtTen").value },
+    facebook: { appSecret: $("fbSecret").value, trang: [...document.querySelectorAll(".trang-fb")].map((d) => ({ id: d.querySelector(".tId").value, ten: d.querySelector(".tTen").value, token: d.querySelector(".tTok").value })) },
+    telegram: { token: $("tgToken").value, traLoiNhom: $("tgNhom").checked, tenGoi: $("tgTen").value },
+    web: { ten: $("webTen").value, mau: $("webMau").value, chao: $("webChao").value },
+  };
+}
+async function luu() { try { const j = await goi("/api/cau-hinh", gom()); await taiTrangThai(true); bao(j.canhBao ? "Đã lưu — " + j.canhBao : "Đã lưu"); } catch (e) { bao(e.message); } }
+$("batNhanh").onchange = async () => {
+  try { await goi("/api/cau-hinh", gom()); await taiTrangThai(true); bao($("batNhanh").checked ? "Bot đã bật" : "Bot đã tắt — tin vẫn về hộp thư"); }
+  catch (e) { bao(e.message); }
+};
+
+async function quetQR() {
+  if (!$("hieuRuiRo").checked) return bao("Tick “Tôi hiểu rủi ro” trước.");
+  await goi("/api/zalo/qr", {}); bao("Đang tạo mã QR…");
+  clearInterval(hoiQR); let n = 0;
+  hoiQR = setInterval(async () => { await taiTrangThai(); if (TT.kenh.zalo === "đang chạy" || ++n > 90) clearInterval(hoiQR); }, 2000);
+}
+async function ngatZalo() { if (!confirm("Ngắt Zalo? Phải quét QR lại để nối.")) return; await goi("/api/zalo/ngat", {}); taiTrangThai(); bao("Đã ngắt Zalo"); }
+
+async function taiHoc() {
+  let j; try { j = await goi("/api/hoc"); } catch { return; }
+  const n = j.cho.length + j.thieu.length;
+  $("demHoc").textContent = n; $("demHoc").classList.toggle("an", !n);
+  for (const [loai, ds] of [["Cho", j.cho], ["Thieu", j.thieu], ["Duyet", j.duyet]]) {
+    $("n" + loai).textContent = "(" + ds.length + ")";
+    const hop = $("ds" + loai); hop.replaceChildren();
+    if (!ds.length) { const p = document.createElement("p"); p.className = "mo"; p.textContent = "Chưa có."; hop.append(p); }
+    for (const h of ds) {
+      const the = document.createElement("div"); the.className = "the"; the.style.marginTop = "8px";
+      const hoi = document.createElement("input"); hoi.value = h.hoi; hoi.setAttribute("aria-label", "Câu hỏi");
+      const tra = document.createElement("textarea"); tra.value = h.tra; tra.placeholder = "Câu trả lời đúng…"; tra.setAttribute("aria-label", "Câu trả lời");
+      const hang = document.createElement("div"); hang.className = "hang";
+      const nut = (chu, trang, chinh) => { const b = document.createElement("button"); b.className = "nut" + (chinh ? " chinh" : ""); b.textContent = chu;
+        b.onclick = async () => { try { await goi("/api/hoc/sua", { id: h.id, hoi: hoi.value, tra: tra.value, trang }); bao(trang === "xoa" ? "Đã bỏ" : "Đã lưu — bot dùng ngay"); taiHoc(); taiTrangThai(); } catch (e) { bao(e.message); } };
+        return b; };
+      hang.append(nut(loai === "Duyet" ? "Lưu sửa" : "Duyệt cho bot học", "duyet", true), nut(loai === "Duyet" ? "Xoá khỏi bộ nhớ bot" : "Bỏ qua", "xoa"));
+      the.append(hoi, tra, hang); hop.append(the);
+    }
+  }
+}
+document.querySelector('nav [data-trang="hoc"]').addEventListener("click", taiHoc);
+
+async function themTaiLieu() {
+  try {
+    for (const f of [...$("tlTep").files]) {
+      $("ttTL").textContent = "Đang đọc " + f.name + "…";
+      if (/\.pdf$/i.test(f.name)) {
+        const r = await fetch("/api/tai-lieu/pdf?ten=" + encodeURIComponent(f.name), { method: "POST", body: f });
+        const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(f.name + ": " + (j.loi || r.status));
+      } else await goi("/api/tai-lieu", { ten: f.name, chu: await f.text() });
+    }
+    if ($("tlChu").value.trim() || $("tlUrl").value.trim()) {
+      $("ttTL").textContent = "Đang thêm…";
+      await goi("/api/tai-lieu", { ten: $("tlTen").value || undefined, chu: $("tlChu").value, url: $("tlUrl").value.trim() || undefined });
+    }
+    $("tlTep").value = ""; $("tlChu").value = ""; $("tlUrl").value = ""; $("tlTen").value = "";
+    $("ttTL").textContent = ""; bao("Đã thêm tài liệu"); taiTrangThai();
+  } catch (e) { $("ttTL").textContent = ""; bao(e.message); }
+}
+
+
+async function thu() {
+  $("kqThu").textContent = "Đang trả lời…";
+  try { const r = await goi("/api/thu", { chu: $("cauThu").value });
+    $("kqThu").textContent = (r.ra || "(bot không trả lời — kiểm tra: bot đang bật, API key, giờ hoạt động)")
+      + (r.doan.length ? "\n\nDựa trên tài liệu: " + r.doan.join(", ") : "\n\n(không dùng tài liệu nào)");
+  } catch (e) { $("kqThu").textContent = e.message; }
+}
+$("cauThu").addEventListener("keydown", (e) => e.key === "Enter" && thu());
+
+const gioNgan = (t) => { const d = new Date(t), h = new Date();
+  return d.toDateString() === h.toDateString() ? d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }); };
+function anh(c, id) {
+  const [ten, mau, chu] = KENH[c.kenh] || ["?", "#888", "?"];
+  const chuCai = (c.ten || ten).trim().charAt(0).toUpperCase();
+  return `<div class="av"${id ? ` id="${id}"` : ""} style="background:${mau}">${esc(chuCai)}<i style="background:${mau}" title="${ten}">${chu}</i></div>`;
+}
+// Zalo OA chỉ cho lấy tên khách khi OA có gói dịch vụ → chưa có tên thì hiện "Khách …1234".
+function tenCuoc(c) { return c.ten || "Khách …" + String(c.ma).slice(-4); }
+
+async function taiDs() {
+  DS = await goi("/api/hop-thu?tim=" + encodeURIComponent($("tim").value.trim()));
+  const theLoc = $("locThe").value;
+  const loc = DS.filter((c) => (!theLoc || c.the.includes(theLoc)) && (LOC === "xong" ? c.xong : !c.xong) && (!LOC || LOC === "xong" || (LOC === "chua" ? c.chua_doc > 0 : LOC === "tay" ? c.tiepQuan
+    : LOC === "cuatoi" ? c.giao === TOI.id : !c.giao)));
+  $("dsCuoc").innerHTML = loc.map((c) => `<li class="${c.chua_doc ? "chua" : ""}"><button data-khoa="${esc(c.khoa)}" aria-current="${c.khoa === CHON}">
+      ${anh(c)}<div style="min-width:0"><div class="ten">${esc(tenCuoc(c))}</div>${theHtml(c.the)}<div class="tom">${c.tiepQuan ? "✋ " : ""}${esc(c.tin_cuoi)}</div>${c.giao && TOI.vai === "chu" ? `<div class="mo" style="font-size:11px">👤 ${esc(tenNv(c.giao))}</div>` : ""}</div>
+      <div class="gio">${choLau(c)}${gioNgan(c.luc)}${c.chua_doc ? `<br><b>${c.chua_doc}</b>` : ""}</div></button></li>`).join("")
+    || `<li class="trong">${DS.length ? "Không có cuộc nào khớp bộ lọc." : "Chưa có tin nhắn. Kết nối kênh ở mục Kết nối, khách nhắn là thấy ở đây."}</li>`;
+}
+$("dsCuoc").addEventListener("click", (e) => { const b = e.target.closest("[data-khoa]"); if (b) moCuoc(b.dataset.khoa); });
+document.querySelectorAll("[data-loc]").forEach((b) => b.onclick = () => {
+  LOC = b.dataset.loc; document.querySelectorAll("[data-loc]").forEach((x) => x.setAttribute("aria-pressed", x === b)); taiDs();
+});
+$("locThe").onchange = () => taiDs();
+// Khách nhắn mà chưa ai (bot hay người) trả lời quá 5 phút → nhãn đỏ "chờ …".
+function choLau(c) {
+  if (c.vai_cuoi !== "khach" || c.xong) return "";
+  const p = Math.floor((Date.now() - c.luc) / 60e3);
+  return p < 5 ? "" : `<span class="cho-lau" title="Khách đang chờ trả lời">chờ ${p < 60 ? p + "p" : p < 1440 ? Math.floor(p / 60) + "g" : Math.floor(p / 1440) + "n"}</span><br>`;
+}
+// Tin mới: số chưa đọc lên tiêu đề tab; bật 🔔 thì kêu một tiếng khi số tăng. Lựa chọn nhớ theo trình duyệt.
+let demCu = null, chuong = false;
+try { chuong = localStorage.getItem("kc-chuong") === "1"; } catch {}
+const veChuong = () => $("nutChuong").setAttribute("aria-pressed", chuong);
+veChuong();
+$("nutChuong").onclick = () => { chuong = !chuong; veChuong(); try { localStorage.setItem("kc-chuong", chuong ? "1" : "0"); } catch {} if (chuong) keu(); };
+function keu() {
+  try {
+    const ac = keu.ac ||= new AudioContext(), o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.value = 880; g.gain.setValueAtTime(0.2, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.4);
+    o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.4);
+  } catch {}
+}
+function baoTinMoi(n) {
+  document.title = (n ? `(${n}) ` : "") + "Kênh Chat";
+  if (demCu !== null && n > demCu && chuong) keu();
+  demCu = n;
+}
+$("tim").addEventListener("input", () => { clearTimeout(taiDs.h); taiDs.h = setTimeout(taiDs, 250); });
+
+async function moCuoc(khoa, giuCuon) {
+  CHON = khoa;
+  let j;
+  try { j = await goi("/api/hop-thu/tin?khoa=" + encodeURIComponent(khoa)); }
+  catch (e) { bao(e.message); $("hop").classList.remove("mo-chat"); $("moChat").classList.add("an"); $("chuaChon").classList.remove("an"); CHON = null; return taiDs(); }
+  const { cuoc, tin, nho } = j;
+  const dongNho = Object.entries(nho || {}).map(([k, v]) => `${k}: ${v}`);
+  $("tomNho").textContent = dongNho.length ? "· " + dongNho.slice(0, 3).join(" · ") : "· chưa có";
+  if (document.activeElement !== $("oNho") && (!giuCuon || $("oNho").dataset.khoa !== khoa)) { $("oNho").value = dongNho.join("\n"); $("oNho").dataset.khoa = khoa; }
+  if (!cuoc) return;
+  $("chuaChon").classList.add("an"); $("moChat").classList.remove("an"); $("hop").classList.add("mo-chat");
+  $("chatAv").outerHTML = anh(cuoc, "chatAv");
+  $("chatTen").textContent = tenCuoc(cuoc);
+  $("chatKenh").textContent = (KENH[cuoc.kenh]?.[0] || cuoc.kenh) + (cuoc.loai === "nhom" ? " · nhóm" : "");
+  const tay = cuoc.tiep_quan_den > Date.now();
+  const con = Math.max(1, Math.round((cuoc.tiep_quan_den - Date.now()) / 60000));
+  $("chatTT").textContent = tay ? `✋ Bạn đang trả lời · bot nghỉ ${con} phút` : "🤖 Bot đang trả lời";
+  $("chatTT").className = "chip" + (tay ? "" : " ok");
+  $("nutTiepQuan").textContent = tay ? "Trả lại cho bot" : "Tôi trả lời";
+  $("nutTiepQuan").onclick = async () => { await goi("/api/hop-thu/tiep-quan", { khoa, bat: !tay }); moCuoc(khoa); };
+  const sel = $("chonGiao");
+  sel.classList.toggle("an", TOI.vai !== "chu" || !NV.length);
+  if (TOI.vai === "chu") {
+    sel.innerHTML = `<option value="">Chưa giao</option>` + NV.map((n) => `<option value="${esc(n.id)}">👤 ${esc(n.ten)}</option>`).join("")
+      + (cuoc.giao && !NV.some((n) => n.id === cuoc.giao) ? `<option value="${esc(cuoc.giao)}">nhân viên đã xoá</option>` : "");
+    sel.value = cuoc.giao || "";
+    sel.onchange = async () => { try { await goi("/api/hop-thu/giao", { khoa, nv: sel.value || null }); bao(sel.value ? "Đã giao cho " + tenNv(sel.value) : "Đã bỏ giao"); moCuoc(khoa); } catch (e) { bao(e.message); } };
+  }
+  const nut = $("nutNhan"), cuaToi = cuoc.giao === TOI.id;
+  nut.classList.toggle("an", TOI.vai !== "nv");
+  nut.textContent = cuaToi ? "Trả về chưa giao" : "Nhận cuộc này";
+  nut.onclick = async () => { try { await goi("/api/hop-thu/giao", { khoa, nv: cuaToi ? null : TOI.id }); bao(cuaToi ? "Đã trả về Chưa giao" : "Cuộc này là của bạn"); moCuoc(khoa); } catch (e) { bao(e.message); } };
+  $("nutXong").textContent = cuoc.xong ? "↺ Mở lại" : "✓ Xong";
+  $("nutXong").onclick = async () => { try { await goi("/api/hop-thu/xong", { khoa, xong: !cuoc.xong }); bao(cuoc.xong ? "Đã mở lại" : "Đã xong — khách nhắn lại sẽ tự mở"); moCuoc(khoa); } catch (e) { bao(e.message); } };
+  const coThe = JSON.parse(cuoc.the || "[]");
+  $("dongThe").innerHTML = THE.map((t) => { const on = coThe.includes(t.id);
+    return `<button data-the="${esc(t.id)}" aria-pressed="${on}" style="${on ? "background:" + esc(t.mau) : "color:" + esc(t.mau)}">${on ? "✓ " : "+ "}${esc(t.ten)}</button>`; }).join("");
+  $("dongThe").onclick = async (e) => { const id = e.target.closest("[data-the]")?.dataset.the; if (!id) return;
+    const moi = coThe.includes(id) ? coThe.filter((x) => x !== id) : [...coThe, id];
+    try { await goi("/api/hop-thu/the", { khoa, the: moi }); moCuoc(khoa, true); } catch (er) { bao(er.message); } };
+  const nhan = { khach: "", bot: "🤖 Bot", nhan_vien: "👤", loi: "⚠ Chưa gửi tới khách", ghi_chu: "📝 Ghi chú nội bộ" };
+  const ds = $("dsTin"), cuoi = ds.scrollHeight - ds.scrollTop - ds.clientHeight < 60;
+  ds.innerHTML = tin.map((t) => `<div class="b ${t.vai}">${esc(t.chu)}<small>${nhan[t.vai] ? nhan[t.vai] + " · " : ""}${gioNgan(t.luc)}${t.nguon ? " · " + esc(t.nguon) : ""}</small></div>`).join("");
+  if (!giuCuon || cuoi) ds.scrollTop = ds.scrollHeight;
+  taiDs();
+}
+$("luuNho").onclick = async () => {
+  if (!CHON) return;
+  const nho = Object.fromEntries($("oNho").value.split("\n").map((d) => d.split(":")).filter((x) => x.length >= 2 && x[0].trim())
+    .map(([k, ...v]) => [k.trim(), v.join(":").trim()]));
+  try { await goi("/api/hop-thu/ghi-nho", { khoa: CHON, nho }); $("oNho").blur(); await moCuoc(CHON); bao("Đã lưu ghi nhớ"); } catch (e) { bao(e.message); }
+};
+$("quayLai").onclick = () => { $("hop").classList.remove("mo-chat"); CHON = null; taiDs(); };
+
+// Bộ gõ tiếng Việt có thể bắn Enter hai lần (một lần lúc chốt chữ) → khoá trong lúc gửi.
+let dangGui = false;
+async function gui() {
+  const chu = $("traLoi").value.trim(); if (!chu || !CHON || dangGui) return;
+  dangGui = true; $("nutGui").disabled = true; $("traLoi").value = "";
+  const ghiChu = $("laGhiChu").checked;
+  try { await goi(ghiChu ? "/api/hop-thu/ghi-chu" : "/api/hop-thu/gui", { khoa: CHON, chu }); await moCuoc(CHON); bao(ghiChu ? "Đã lưu ghi chú — khách không thấy" : "Đã gửi — bot nghỉ cuộc này 2 giờ"); }
+  catch (e) { if (!$("traLoi").value) $("traLoi").value = chu; bao(e.message); }
+  dangGui = false; $("nutGui").disabled = false;
+}
+$("nutGui").onclick = gui;
+$("laGhiChu").onchange = () => $("khungSoan").classList.toggle("la-ghi-chu", $("laGhiChu").checked);
+// Câu mẫu: ô trả lời bắt đầu bằng "/" → hiện danh sách khớp tên tắt hoặc nội dung.
+let GY = [], gyChon = 0;
+function veGoiY() {
+  const v = $("traLoi").value, m = /^\/(\S*)$/.exec(v);
+  const q = m ? m[1].toLowerCase() : null;
+  GY = q === null ? [] : MAU.filter((x) => x.tat.toLowerCase().includes(q) || x.chu.toLowerCase().includes(q)).slice(0, 8);
+  gyChon = Math.min(gyChon, Math.max(0, GY.length - 1));
+  $("goiY").hidden = !GY.length;
+  $("goiY").innerHTML = GY.map((x, i) => `<li role="option" data-i="${i}" aria-selected="${i === gyChon}"><b>/${esc(x.tat)}</b> — ${esc(x.chu.slice(0, 90))}</li>`).join("");
+}
+function chonGoiY(i) { if (!GY[i]) return; $("traLoi").value = GY[i].chu; GY = []; $("goiY").hidden = true; $("traLoi").focus(); }
+$("traLoi").addEventListener("input", () => { gyChon = 0; veGoiY(); });
+$("goiY").addEventListener("mousedown", (e) => { const li = e.target.closest("[data-i]"); if (li) { e.preventDefault(); chonGoiY(+li.dataset.i); } });
+$("traLoi").addEventListener("keydown", (e) => {
+  if (GY.length && ["ArrowDown", "ArrowUp", "Tab", "Enter", "Escape"].includes(e.key) && !e.isComposing) {
+    e.preventDefault();
+    if (e.key === "ArrowDown") gyChon = (gyChon + 1) % GY.length; else if (e.key === "ArrowUp") gyChon = (gyChon - 1 + GY.length) % GY.length;
+    else if (e.key === "Escape") { GY = []; $("goiY").hidden = true; return; } else return chonGoiY(gyChon);
+    return veGoiY();
+  }
+  if (e.key !== "Enter" || e.shiftKey || e.isComposing || e.keyCode === 229) return;
+  e.preventDefault(); if (!e.repeat) gui();
+});
+
+// ---- Nhân viên ----
+function hienNhanVien() {
+  $("chiaTuDong").checked = !!TT.cauHinh.chiaTuDong; $("botImKhiGiao").checked = !!TT.cauHinh.botImKhiGiao;
+  $("dsNv").innerHTML = NV.map((n) => `<tr><td>👤 ${esc(n.ten)}</td><td style="text-align:right;white-space:nowrap">
+    <button class="nut nho" data-nv-mk="${esc(n.id)}">Cấp mật khẩu mới</button> <button class="nut nho" data-nv-xoa="${esc(n.id)}">Xoá</button></td></tr>`).join("")
+    || `<tr><td class="mo">Chưa có nhân viên. Một mình chủ shop vẫn dùng bình thường.</td></tr>`;
+  const dc = TT.diaChiNhanVien || [];
+  $("dcNv").innerHTML = dc.length ? dc.map((d) => `<li><code>${esc(d)}</code></li>`).join("") + `<li>Điện thoại/máy nhân viên phải cùng mạng Wi-Fi với máy chạy bot (trừ địa chỉ https).</li>`
+    : `<li>Bot đang chỉ mở trên máy này. Nhân viên dùng chung máy này, hoặc gắn tên miền riêng ở mục Kết nối.</li>`;
+}
+async function nvViec(than, xong) {
+  try { const j = await goi("/api/nhan-vien", than); await taiTrangThai(false); xong && xong(j); } catch (e) { bao(e.message); }
+}
+const hienMk = (ten, mk) => { $("nvMkMoi").hidden = false; $("nvMkMoi").innerHTML = `Mật khẩu của <b>${esc(ten)}</b>: <code style="user-select:all">${esc(mk)}</code> — chép gửi nhân viên ngay, trang này chỉ hiện một lần.`; };
+$("nutThemNv").onclick = () => nvViec({ viec: "them", ten: $("nvTen").value }, (j) => { $("nvTen").value = ""; hienMk(j.ten, j.matKhau); });
+$("chiaTuDong").onchange = () => nvViec({ viec: "chia", bat: $("chiaTuDong").checked }, () => bao($("chiaTuDong").checked ? "Đã bật tự chia" : "Đã tắt tự chia"));
+$("dsNv").addEventListener("click", (e) => {
+  const mk = e.target.dataset.nvMk, xoa = e.target.dataset.nvXoa;
+  if (mk) nvViec({ viec: "doi-mk", id: mk }, (j) => hienMk(tenNv(mk), j.matKhau));
+  if (xoa && confirm(`Xoá ${tenNv(xoa)}? Cuộc của người này về "Chưa giao".`)) nvViec({ viec: "xoa", id: xoa }, () => bao("Đã xoá"));
+});
+$("botImKhiGiao").onchange = () => nvViec({ viec: "bot-im", bat: $("botImKhiGiao").checked }, () => bao("Đã lưu"));
+const phut = (g) => g == null ? "—" : g < 60 ? g + " giây" : g < 3600 ? Math.round(g / 60) + " phút" : (g / 3600).toFixed(1) + " giờ";
+async function taiThongKe() {
+  let k; try { k = await goi("/api/thong-ke?ngay=" + $("tkNgay").value); } catch { return; }
+  const dong = k.nguoi.sort((a, b) => b.tin - a.tin).map((n) => { const nv = NV.find((x) => x.ten === n.ten), g = nv && k.theoNv[nv.id];
+    return `<tr><td>👤 ${esc(n.ten)}</td><td class="so">${n.tin}</td><td class="so">${n.cuoc}</td><td class="so">${phut(n.traLoiTb)}</td><td class="so">${g ? g.xong + "/" + g.cuoc : "—"}</td></tr>`; }).join("");
+  const the = THE.map((t) => `<span class="the-k" style="background:${esc(t.mau)}">${esc(t.ten)}: ${k.the[t.id] || 0}</span>`).join(" ");
+  $("tkBang").innerHTML = `<table style="margin-top:8px"><thead><tr><th>Người trả lời</th><th class="so">Tin gửi</th><th class="so">Số khách</th><th class="so">Trả lời TB</th><th class="so">Xong/được giao</th></tr></thead>
+    <tbody>${dong || `<tr><td colspan="5" class="mo">Chưa ai trả lời tay trong khoảng này.</td></tr>`}</tbody></table>
+    <p class="mo" style="margin:8px 0 0">Khách đang chờ người trả lời: <b>${k.chuaTraLoi}</b> · Thẻ: ${the || "chưa có"}</p>
+    <p class="mo" style="margin:4px 0 0;font-size:12px">"Trả lời TB" = từ tin khách đầu tiên chưa ai trả lời tay tới tin của người đó.</p>`;
+}
+$("tkNgay").onchange = taiThongKe;
+document.querySelector('nav [data-trang="nhanvien"]').addEventListener("click", taiThongKe);
+// ---- Khách hàng ----
+const locKhach = () => `tim=${encodeURIComponent($("khTim").value.trim())}&the=${encodeURIComponent($("khThe").value)}&sdt=${$("khSdt").checked ? 1 : ""}`;
+async function taiKhach() {
+  const v = $("khThe").value;
+  $("khThe").innerHTML = `<option value="">Mọi thẻ</option>` + THE.map((t) => `<option value="${esc(t.id)}">${esc(t.ten)}</option>`).join("");
+  $("khThe").value = THE.some((t) => t.id === v) ? v : "";
+  let k; try { k = await goi("/api/khach-hang?" + locKhach()); } catch (e) { return bao(e.message); }
+  const tenKenh = { zalo: "Zalo", zalooa: "Zalo OA", oa: "Zalo OA", fb: "Fanpage", facebook: "Fanpage", telegram: "Telegram", web: "Website" };
+  $("khDem").textContent = `${k.tong} khách` + (k.tong > k.ds.length ? ` · hiện ${k.ds.length} người gần nhất, Xuất CSV lấy đủ` : "");
+  $("bangKhach").tBodies[0].innerHTML = k.ds.map((x) => `<tr ${x.coChat ? `data-khoa="${esc(x.khoa)}" title="Mở cuộc chat"` : ""}>
+    <td>${esc(x.ten || "—")}</td><td style="white-space:nowrap">${esc(x.nho["SĐT"] || "")}</td><td>${esc(x.nho["Email"] || "")}</td>
+    <td>${esc(x.nho["Địa chỉ"] || "")}</td><td>${theHtml(x.the)}</td><td>${esc(tenKenh[x.kenh] || x.kenh)}</td><td class="so">${gioNgan(x.luc)}</td></tr>`).join("")
+    || `<tr><td colspan="7" class="mo">Chưa có khách khớp bộ lọc.</td></tr>`;
+}
+$("khTim").addEventListener("input", () => { clearTimeout(taiKhach.h); taiKhach.h = setTimeout(taiKhach, 250); });
+$("khThe").onchange = taiKhach; $("khSdt").onchange = taiKhach;
+$("khXuat").onclick = () => { location.href = "/api/khach-hang?csv=1&" + locKhach(); };
+$("bangKhach").addEventListener("click", (e) => { const r = e.target.closest("[data-khoa]"); if (r) { moTrang("hopthu"); moCuoc(r.dataset.khoa); } });
+// ---- Thẻ & câu mẫu ----
+function dongThe(t = {}) { const tr = document.createElement("tr"); tr.dataset.id = t.id || "";
+  tr.innerHTML = `<td style="width:46px"><input type="color" value="${esc(t.mau || "#1c7ed6")}" aria-label="Màu thẻ"></td><td><input value="${esc(t.ten || "")}" placeholder="Tên thẻ, vd. Khách VIP" maxlength="30" aria-label="Tên thẻ"></td><td><input data-tu value="${esc(t.tu || "")}" placeholder="Tự gắn khi khách nhắn: giá sỉ, đại lý" maxlength="300" aria-label="Từ khoá tự gắn thẻ"></td><td style="width:60px"><button class="nut nho" data-bo>Xoá</button></td>`;
+  $("bangThe").append(tr); }
+function dongMau(x = {}) { const tr = document.createElement("tr");
+  tr.innerHTML = `<td style="width:120px"><input value="${esc(x.tat || "")}" placeholder="tên tắt" maxlength="20" aria-label="Tên tắt"></td><td><textarea style="min-height:44px" aria-label="Nội dung câu mẫu" placeholder="Nội dung chèn vào ô trả lời">${esc(x.chu || "")}</textarea></td><td style="width:60px"><button class="nut nho" data-bo>Xoá</button></td>`;
+  $("bangMau").append(tr); }
+function hienTheMau() { $("bangThe").innerHTML = ""; THE.forEach(dongThe); $("bangMau").innerHTML = ""; MAU.forEach(dongMau); }
+$("themThe").onclick = () => dongThe(); $("themMau").onclick = () => dongMau();
+for (const b of ["bangThe", "bangMau"]) $(b).addEventListener("click", (e) => { if (e.target.dataset.bo !== undefined) e.target.closest("tr").remove(); });
+$("luuTheMau").onclick = async () => {
+  const the = [...$("bangThe").rows].map((r) => ({ id: r.dataset.id, mau: r.querySelector("[type=color]").value, ten: r.querySelectorAll("input")[1].value, tu: r.querySelector("[data-tu]").value }));
+  const mau = [...$("bangMau").rows].map((r) => ({ tat: r.querySelector("input").value, chu: r.querySelector("textarea").value }));
+  try { await goi("/api/the-mau", { the, mau }); await taiTrangThai(false); hienTheMau(); bao("Đã lưu thẻ và câu mẫu"); } catch (e) { bao(e.message); }
+};
+$("nutDangXuat").onclick = async () => { try { await goi("/api/dang-xuat", {}); } catch {} location.reload(); };
+
+// ---- Tên miền riêng ----
+let hoiTM = null;
+function hienTenMien(dienForm) {
+  const tm = TT.tenMien || {}, goc = TT.webhook.goc;
+  chip($("ttTM"), tm.ten ? "tên miền riêng" : goc ? "đường hầm tạm" : "chưa có");
+  $("ttTM").classList.toggle("ok", !!tm.ten);
+  if (dienForm) { $("tmBat").checked = !!tm.ten; $("tmTen").value = tm.ten || ""; $("tmKhung").hidden = !tm.ten; }
+  $("tmGoiY").textContent = tm.tuDat
+    ? `Tại nơi quản lý tên miền, thêm bản ghi A trỏ tên miền này về IP của VPS. Bot sẽ tự cài HTTPS (Caddy hoặc nginx + certbot) và mở cổng 80/443, mất khoảng 1–3 phút.`
+    : `Máy này không tự cài HTTPS được. Hãy tự trỏ tên miền về http://127.0.0.1:${tm.cong || 8790} (Cloudflare Tunnel có tên, hoặc nginx/Caddy có sẵn) rồi bấm kiểm tra.`;
+  if (tm.dangChay && !hoiTM) theoDoiTenMien();
+}
+$("tmBat").onchange = () => {
+  $("tmKhung").hidden = !$("tmBat").checked;
+  // Bỏ tích khi đang dùng tên miền nghĩa là quay về đường hầm.
+  if (!$("tmBat").checked && TT?.tenMien?.ten && confirm("Bỏ tên miền riêng, quay lại đường hầm Cloudflare? Webhook ở Zalo OA / Facebook sẽ phải dán lại.")) guiTenMien("");
+  else if (!$("tmBat").checked && TT?.tenMien?.ten) $("tmBat").checked = true, $("tmKhung").hidden = false;
+};
+function datTenMien() {
+  const ten = $("tmTen").value.trim();
+  if (!ten) { $("tmTen").focus(); return bao("Nhập tên miền"); }
+  guiTenMien(ten);
+}
+async function guiTenMien(ten) {
+  try {
+    await goi("/api/ten-mien", { tenMien: ten });
+    theoDoiTenMien();
+  } catch (e) { bao(e.message); }
+}
+function theoDoiTenMien() {
+  clearInterval(hoiTM);
+  $("tmNut").disabled = true; $("tmBao").hidden = false; $("tmBao").className = "mo"; $("tmBao").textContent = "Đang kiểm tra…";
+  let loiLienTiep = 0;
+  hoiTM = setInterval(async () => {
+    let v;
+    // Bot có thể khởi động lại để đổi chỗ nghe — vài lượt lỗi liền nhau là bình thường.
+    try { v = await goi("/api/ten-mien"); loiLienTiep = 0; } catch { if (++loiLienTiep > 20) { clearInterval(hoiTM); hoiTM = null; $("tmNut").disabled = false; } return; }
+    $("tmNhatKy").hidden = !v.nhatKy; $("tmNhatKy").querySelector("pre").textContent = v.nhatKy;
+    if (v.dangChay) return;
+    clearInterval(hoiTM); hoiTM = null; $("tmNut").disabled = false;
+    $("tmBao").className = v.ok ? "" : "canh-bao"; $("tmBao").textContent = v.bao;
+    await taiTrangThai(true).catch(() => {});
+    // Đổi sang tên miền: bot chỉ còn nghe trong máy, mở lại panel qua https://<tên miền>.
+    if (v.ok && v.ten && location.hostname !== v.ten && location.hostname !== "127.0.0.1" && location.hostname !== "localhost") {
+      $("tmBao").textContent += `\nChuyển sang https://${v.ten} sau 5 giây (đăng nhập lại)…`;
+      setTimeout(() => location.href = `https://${v.ten}/`, 5000);
+    }
+  }, 2000);
+}
+
+async function batDau() {
+  await taiTrangThai(true);
+  hienMan(true);
+  let tr = "hopthu"; try { tr = localStorage.getItem("kc-trang") || tr; } catch {}
+  if (TOI.vai === "nv") tr = "hopthu";
+  moTrang(tr);
+  await taiDs();
+  if (TOI.vai === "chu") taiHoc();
+}
+// Cập nhật mỗi 5 giây: tin mới, trạng thái kênh. Không ghi đè ô đang gõ.
+setInterval(async () => {
+  if ($("manChinh").classList.contains("an")) return;
+  try { await taiTrangThai(false); if (CHON) await moCuoc(CHON, true); else await taiDs(); } catch {}
+}, 5000);
+batDau().catch(() => hienMan(false));
+</script>
+</body>
+</html>

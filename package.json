@@ -1,0 +1,17 @@
+{
+  "name": "revidapi-kenh-chat",
+  "version": "1.5.2",
+  "private": true,
+  "type": "module",
+  "description": "Chatbot AI cho Zalo cá nhân, Zalo OA, Facebook Fanpage, Telegram — trả lời bằng tài liệu của bạn qua RevidAPI",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=22.5"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^4.10.38",
+    "zca-js": "2.2.0"
+  }
+}
