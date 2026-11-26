@@ -156,6 +156,11 @@ Zalo OA chỉ cho trả lời người đã **quan tâm (follow) OA** và nhắn
 4. Trang quản trị → Fanpage → Thêm Trang → dán Page ID, Token. Nên dán cả **App Secret** để bot kiểm chữ ký.
    Bấm **Lưu**: bot tự kiểm token đúng Trang chưa và tự đăng ký Trang nhận tin (subscribed_apps). Báo lỗi thì đọc dòng cảnh báo — thường là dán nhầm User token thay vì Page token.
 5. Muốn trả lời người ngoài (không phải admin app) thì app phải qua duyệt quyền `pages_messaging` của Meta.
+6. **Bình luận → nhắn riêng** (khách bình luận dưới bài, bot tự inbox): Fanpage → mục *Bình luận → nhắn riêng* → bật.
+   - Webhooks của app bật thêm trường `feed`; token Trang cần thêm quyền `pages_manage_engagement`, `pages_read_engagement`.
+   - Lọc theo từ khoá (vd `giá, ib, inbox`) và theo bài; tin riêng để trống thì AI trả lời theo tài liệu, có `{ten}` để gọi tên.
+   - Trả lời công khai: mỗi dòng một câu, bot chọn ngẫu nhiên. Có thể tự ẩn bình luận sau khi trả lời.
+   - Meta chỉ cho **một** tin riêng / bình luận trong 7 ngày; khách trả lời lại thì cuộc chat vào Hộp thư như Messenger thường.
 
 ### Telegram
 Nhắn @BotFather → `/newbot` → dán token. Xong.
@@ -168,7 +173,7 @@ Mục Kết nối → thẻ **Website** → chép dòng `<script src="https://<�
 
 ## 4. Chi phí
 
-Mỗi tin bot trả lời trừ credit theo model đã chọn (mặc định `deepseek-v4-flash`, rẻ nhất).
+Mỗi tin bot trả lời trừ credit theo model đã chọn (mặc định `deepseek-v4.1-flash`, rẻ nhất).
 Mỗi lượt chỉ gửi: vai trò ngắn + 6 tin gần nhất (mỗi tin ≤ 500 ký tự) + tối đa 3 đoạn tài liệu.
 Đặt trần chi tiêu theo ngày cho API key ở revidapi.com/dashboard → API key, để bot không bao giờ tiêu quá số bạn muốn.
 
@@ -207,3 +212,27 @@ cd ~/.revidapi/kenh-chat && node cham-diem.mjs
 
 Lần đầu tự tạo `data/cau-mau.txt` từ các câu nhân viên đã trả lời. Mỗi dòng: `câu khách hỏi | chữ phải có`.
 Câu ✗ nghĩa là tài liệu thiếu hoặc gọi tên khác cách khách gọi — sửa tài liệu rồi chạy lại.
+
+## Giao việc qua chat
+
+Chủ (kênh đã nối bằng mã chủ):
+- `#viec Tên việc @tên người 30/10` — tạo việc; người và hạn có thể bỏ. Người nhận đã nối chat sẽ được báo ngay.
+- `#ds` — việc đang mở, kèm mã 4 ký tự. `#xong <mã>` — đánh dấu xong.
+
+Nhân viên: nhắn bot `#toi <mã nhân viên>` (mã trên bảng Nhân sự) một lần. Sau đó `#ds` chỉ thấy việc của mình, `#xong <mã>` thì chủ được báo.
+
+Nhắc hạn: từ 09:00 mỗi ngày, việc hạn ngày mai được nhắc một lần cho chủ và cho người được giao. Đổi giờ bằng `NHAC_HAN=08:00`, tắt bằng `NHAC_HAN=tat`. Báo cáo sáng/tối: `BAO_SANG` (07:30), `BAO_TOI` (21:00).
+
+## Gửi loạt cho khách cũ
+
+Trang quản trị → *Khách hàng* → lọc theo tên/số điện thoại, thẻ, hoặc "chỉ khách có SĐT" → mở *Gửi loạt*.
+- Viết tin, dùng `{ten}` (tên gọi) hoặc `{ten_day_du}`. Bấm **Xem ai sẽ nhận** để thấy số người và tin mẫu trước khi gửi.
+- Bấm **Gửi** hai lần mới gửi thật. Mặc định cách nhau ~5 giây/người (3–60) để tài khoản không bị khoá; có nút **Dừng**.
+- Tự bỏ qua: khách chỉ gặp trong nhóm, khách Website, khách Fanpage nhắn quá 24 giờ, khách Zalo OA quá 7 ngày (luật của Facebook/Zalo). Lý do bỏ hiện ngay trên trang.
+
+## Chăm sóc tự động
+
+*Khách hàng* → *Chăm sóc tự động*: thêm tối đa 10 bước "sau X giờ khách im lặng thì gửi tin này", có thể chỉ áp cho khách mang một thẻ.
+- Mỗi bước chỉ gửi một lần cho mỗi lần khách im lặng; khách nhắn lại thì đếm lại từ đầu.
+- Không gửi khi nhân viên đang tiếp quản, cuộc chat đã đánh dấu xong, hoặc đã quá hạn kênh (như Gửi loạt).
+- Bảng hiện số tin đã gửi/lỗi 7 ngày qua cho từng bước. Bot quét mỗi 10 phút.

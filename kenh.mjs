@@ -5,6 +5,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { anhDataUri, tachAnh, taiAnh } from "./noi-dung.mjs";
+import { boDau } from "./kho-tai-lieu.mjs";
 
 // Tin do chính chương trình gửi đi (bot hoặc hộp thư) — để phân biệt với tin nhân viên
 // gõ trên điện thoại, vì Zalo/Messenger đều báo lại cả hai là "tin của mình".
@@ -43,8 +44,9 @@ const LOI_TOKEN_OA = {
 
 // ---------------- Zalo cá nhân (zca-js, không chính thức) ----------------
 export class ZaloCaNhan {
-  constructor({ fileDangNhap, boNao, hopThu, layCauHinh, bao }) {
-    Object.assign(this, { fileDangNhap, boNao, hopThu, layCauHinh, bao });
+  constructor({ fileDangNhap, boNao, hopThu, layCauHinh, bao, kenh = this.kenh }) {
+    // kenh: this.kenh, "zalo2", "zalo3" — mỗi tài khoản một kênh riêng, trả lời đúng tài khoản nhận tin.
+    Object.assign(this, { fileDangNhap, boNao, hopThu, layCauHinh, bao, kenh });
     this.trangThai = "chưa nối";
     this.qr = null;
     this.api = null;
@@ -66,7 +68,7 @@ export class ZaloCaNhan {
       this._gan(await new Zalo({ selfListen: true }).login(cred));
     } catch (e) {
       this.trangThai = "mất phiên — quét QR lại";
-      this.bao("zalo", "Không mở lại được phiên: " + (e?.message || e));
+      this.bao(this.kenh, "Không mở lại được phiên: " + (e?.message || e));
     }
   }
 
@@ -105,7 +107,7 @@ export class ZaloCaNhan {
     if (chuGon) { this.daGui.them(ma, chuGon); await this.api.sendMessage({ msg: chuGon, quote }, ma, kieu); }
     for (const u of anh) {
       const a = await taiAnh(u);
-      if (!a) { this.bao("zalo", "Không tải được ảnh để gửi: " + u); continue; }
+      if (!a) { this.bao(this.kenh, "Không tải được ảnh để gửi: " + u); continue; }
       await this.api.sendMessage({ msg: "", attachments: [{ data: a.buf, filename: a.ten, metadata: { totalSize: a.buf.length } }] }, ma, kieu);
     }
   }
@@ -143,36 +145,36 @@ export class ZaloCaNhan {
           // Tin "của mình" mà không phải do chương trình gửi → nhân viên trả lời trên điện thoại.
           // Ảnh/tệp nhân viên gửi từ điện thoại cũng là nhân viên đang trả lời (ảnh bot gửi đi
           // không có chữ — bỏ qua tin không chữ đến trong 20 giây sau lượt bot).
-          if (typeof c === "string") { if (!this.daGui.laCuaMinh(msg.threadId, chu)) nhanVienTraLoi(this.hopThu, "zalo", msg.threadId, chu); }
-          else if (Date.now() - (this.botGuiLuc.get(msg.threadId) || 0) > 20000) nhanVienTraLoi(this.hopThu, "zalo", msg.threadId, chu || "[ảnh/tệp]");
+          if (typeof c === "string") { if (!this.daGui.laCuaMinh(msg.threadId, chu)) nhanVienTraLoi(this.hopThu, this.kenh, msg.threadId, chu); }
+          else if (Date.now() - (this.botGuiLuc.get(msg.threadId) || 0) > 20000) nhanVienTraLoi(this.hopThu, this.kenh, msg.threadId, chu || "[ảnh/tệp]");
           return;
         }
         const ch = this.layCauHinh().zalo || {};
         if (nhom && !ch.traLoiNhom) {
-          this.hopThu.ghi("zalo", msg.threadId, { vai: "khach", chu: `${msg.data.dName}: ${chu}`, loai });
+          this.hopThu.ghi(this.kenh, msg.threadId, { vai: "khach", chu: `${msg.data.dName}: ${chu}`, loai });
           return;
         }
         // Trong nhóm chỉ trả lời khi được gọi tên, tránh "spam" cả nhóm và tốn tiền.
         const goiTen = !nhom || !ch.tenGoi || chu.toLowerCase().includes(ch.tenGoi.toLowerCase());
         if (!goiTen) {
-          this.hopThu.ghi("zalo", msg.threadId, { vai: "khach", chu: `${msg.data.dName}: ${chu}`, loai });
+          this.hopThu.ghi(this.kenh, msg.threadId, { vai: "khach", chu: `${msg.data.dName}: ${chu}`, loai });
           return;
         }
-        const ra = await this.boNao.traLoi("zalo", msg.threadId, chu, {
-          maTin: "zalo:" + msg.data.msgId, tenNguoi: nhom ? msg.data.dName : null,
+        const ra = await this.boNao.traLoi(this.kenh, msg.threadId, chu, {
+          maTin: this.kenh + ":" + msg.data.msgId, tenNguoi: nhom ? msg.data.dName : null,
           tenCuoc: nhom ? null : msg.data.dName, loai, maNguoi: nhom ? msg.data.uidFrom : null, anh });
         if (ra) {
           this.botGuiLuc.set(msg.threadId, Date.now());
           await this._guiCa(msg.threadId, ra, msg.type, nhom ? msg.data : undefined)
-            .catch((e) => guiThatBai(this.hopThu, this.bao, "zalo", msg.threadId, "Zalo: " + (e?.message || e)));
+            .catch((e) => guiThatBai(this.hopThu, this.bao, this.kenh, msg.threadId, "Zalo: " + (e?.message || e)));
         }
-      } catch (e) { this.bao("zalo", "Lỗi xử lý tin: " + (e?.message || e)); }
+      } catch (e) { this.bao(this.kenh, "Lỗi xử lý tin: " + (e?.message || e)); }
     });
     api.listener.on("closed", () => {
       this.trangThai = "mất kết nối (có thể do mở Zalo Web) — đang nối lại";
       setTimeout(() => this.moLai(), 30000);
     });
-    api.listener.on("error", (e) => this.bao("zalo", "Listener lỗi: " + (e?.message || e)));
+    api.listener.on("error", (e) => this.bao(this.kenh, "Listener lỗi: " + (e?.message || e)));
     api.listener.start();
   }
 
@@ -314,6 +316,7 @@ export class Fanpage {
   constructor({ boNao, hopThu, layCauHinh, bao }) {
     Object.assign(this, { boNao, hopThu, layCauHinh, bao });
     this.ten = new Map();   // psid -> tên khách (đỡ gọi Graph nhiều lần)
+    this.daBl = new Map();  // comment_id / người+bài -> lúc đã trả lời (chống trả trùng, chống spam)
   }
 
   get trangThai() { return (this.layCauHinh().facebook?.trang || []).length ? "đang chạy" : "chưa nối"; }
@@ -342,6 +345,11 @@ export class Fanpage {
       if (String(me.id) !== String(t.id)) return `Trang ${t.ten || t.id}: token này là của "${me.name}" (ID ${me.id}), không phải Page ID đã nhập. Cần Page Access Token, không phải User token.`;
       const dk = await (await fetch(`${G}${t.id}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_echoes&access_token=${encodeURIComponent(t.token)}`, { method: "POST" })).json();
       if (!dk.success) return `Trang ${me.name}: chưa đăng ký nhận tin được — ${dk.error?.message || "không rõ"}. Token cần quyền pages_messaging và pages_manage_metadata.`;
+      // Bình luận → nhắn riêng cần thêm trường "feed". Thiếu quyền thì chỉ cảnh báo, Messenger vẫn chạy.
+      if (this.layCauHinh().facebook?.binhLuan?.bat) {
+        const f = await (await fetch(`${G}${t.id}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_echoes,feed&access_token=${encodeURIComponent(t.token)}`, { method: "POST" })).json();
+        if (!f.success) return `Trang ${me.name}: Messenger đã nối, nhưng chưa nhận được bình luận — ${f.error?.message || "không rõ"}. Token cần thêm quyền pages_manage_engagement, pages_read_engagement.`;
+      }
       return null;
     } catch (e) { return `Trang ${t.ten || t.id}: không gọi được Facebook — ${e.message}`; }
   }
@@ -384,10 +392,91 @@ export class Fanpage {
     }
   }
 
+  // ---- Bình luận trên bài viết → trả lời công khai + nhắn riêng (private reply) ----
+  // Meta cho đúng MỘT tin nhắn riêng / bình luận, trong 7 ngày. Khách trả lời tin đó thì
+  // cuộc chat mở ra như tin Messenger bình thường (bot trả lời tiếp, vào Hộp thư).
+  async graph(trang, duong, than) {
+    const r = await fetch(`https://graph.facebook.com/v21.0/${duong}${duong.includes("?") ? "&" : "?"}access_token=${encodeURIComponent(trang.token)}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: than ? JSON.stringify(than) : undefined,
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error) throw new Error(j.error?.message || `HTTP ${r.status}`);
+    return j;
+  }
+
+  khopBinhLuan(bl, chu, postId) {
+    if (bl.baiViet && String(bl.baiViet).trim()) {
+      const ds = String(bl.baiViet).split(/[\s,]+/).filter(Boolean);
+      if (!ds.some((x) => String(postId).endsWith(x.replace(/^.*[/_]/, "")))) return false;
+    }
+    const tu = String(bl.tuKhoa || "").split(/[,\n]/).map((x) => boDau(x.toLowerCase()).trim()).filter(Boolean);
+    if (!tu.length) return true;
+    const c = " " + boDau(chu.toLowerCase()).replace(/[^a-z0-9]+/g, " ") + " ";
+    return tu.some((t) => c.includes(" " + t.replace(/[^a-z0-9]+/g, " ").trim() + " "));
+  }
+
+  async binhLuan(e, v) {
+    const bl = this.layCauHinh().facebook?.binhLuan || {};
+    if (!bl.bat || v.item !== "comment" || v.verb !== "add") return;
+    const trang = this.trang(e.id);
+    const nguoi = v.from?.id, cid = v.comment_id, chu = String(v.message || "").trim();
+    if (!trang || !cid || !nguoi || String(nguoi) === String(e.id)) return;   // Trang tự bình luận
+    if (v.parent_id && v.parent_id !== v.post_id && !bl.caTraLoiCon) return;   // trả lời trong luồng bình luận
+    const bay = Date.now();
+    for (const [k, t] of this.daBl) if (bay - t > 86400e3) this.daBl.delete(k);
+    const moiBai = `${nguoi}|${v.post_id}`;
+    if (this.daBl.has(cid) || this.daBl.has(moiBai)) return;   // mỗi người một lần / bài / 24 giờ
+    if (!this.khopBinhLuan(bl, chu, v.post_id)) return;
+    this.daBl.set(cid, bay); this.daBl.set(moiBai, bay);
+    const ten = v.from?.name || "";
+    const dien = (m) => String(m || "").replaceAll("{ten}", ten.split(" ").pop() || "bạn").replaceAll("{ten_day_du}", ten || "bạn").trim();
+    const tenTrang = trang.ten || "Fanpage";
+
+    // Nội dung nhắn riêng: câu mẫu chủ soạn, hoặc để AI trả lời theo tài liệu.
+    let rieng = dien(bl.nhanRieng), token = 0, nguon = "bình luận";
+    if (!rieng && chu) {
+      try {
+        const ch = this.layCauHinh();
+        const { doan, token: t1 } = await this.boNao.timTaiLieu(ch, chu);
+        const r = await this.boNao.goiKenh(ch, "tra-loi", {
+          cau: `[Khách bình luận dưới bài viết của Trang, mình nhắn riêng để trả lời] ${chu}`.slice(0, 2000),
+          doan: doan.map((d) => d.chu), co_tai_lieu: this.boNao.kho.danhSach().length > 0, vai_tro: ch.vaiTro, lich_su: [],
+          ten_nguoi: ten || undefined, kenh: "fb", model: ch.model, max_tokens: Math.max(ch.toiDaRa || 800, 600),
+        }, 30000);
+        rieng = r.chu.replace(/\[\[NHO:[\s\S]*?(?:\]\]|$)/g, "").trim(); token = r.token + t1;
+        nguon = [...new Set(doan.map((d) => d.nguon))].join(", ") || "bình luận";
+      } catch (x) { this.bao?.("fb", `Bình luận ${tenTrang}: AI không trả lời được — ${x.message}`); }
+    }
+    if (!rieng) rieng = dien(bl.duPhong) || `Chào ${ten || "bạn"}, mình đã nhận được bình luận của bạn. Bạn cần tư vấn gì cứ nhắn ở đây nhé!`;
+
+    let psid = null;
+    try {
+      const r = await this.graph(trang, "me/messages", { recipient: { comment_id: cid }, message: { text: rieng.slice(0, 2000) } });
+      psid = r.recipient_id;
+    } catch (x) { guiThatBai(this.hopThu, this.bao, "fb", `${e.id}:bl_${nguoi}`, `${tenTrang} — không nhắn riêng được cho bình luận: ${x.message}`); }
+    if (bl.traLoiCong) {
+      // Nhiều câu (mỗi dòng một câu) thì chọn ngẫu nhiên — Facebook dễ coi là spam khi mọi bình luận nhận đúng một câu.
+      const ds = String(bl.traLoiCong).split("\n").map((x) => x.trim()).filter(Boolean);
+      const cong = dien(ds[Math.floor(Math.random() * ds.length)]);
+      if (cong) await this.graph(trang, `${cid}/comments`, { message: cong.slice(0, 1500) }).catch((x) => this.bao?.("fb", `Bình luận ${tenTrang}: không trả lời công khai được — ${x.message}`));
+    }
+    if (bl.an) await this.graph(trang, `${cid}?is_hidden=true`).catch(() => {});
+    if (psid) {
+      const ma = `${e.id}:${psid}`;
+      const tenCuoc = ten ? `${ten} · ${tenTrang}` : null;
+      this.hopThu.ghi("fb", ma, { vai: "khach", chu: `[Bình luận] ${chu || "(ảnh/nhãn dán)"}`, ten: tenCuoc });
+      this.hopThu.ghi("fb", ma, { vai: "bot", chu: rieng, token, nguon });
+      if (ten) this.ten.set(psid, ten);
+    }
+  }
+
   async nhan(body) {
     for (const e of body?.entry || []) {
       const trang = this.trang(e.id);
       if (!trang) continue;
+      for (const c of e.changes || []) {
+        if (c.field === "feed") await this.binhLuan(e, c.value || {}).catch((x) => this.bao?.("fb", `Bình luận: ${x.message}`));
+      }
       for (const m of e.messaging || []) {
         // Ảnh: attachments type=image; link chia sẻ: type=fallback có payload.url.
         // Khách bấm "Bắt đầu" / nút menu: coi tiêu đề nút là tin nhắn.

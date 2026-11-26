@@ -55,6 +55,7 @@ export class HopThu {
     }
     this.db.prepare("INSERT INTO tin (khoa, vai, chu, luc, token, nguon) VALUES (?, ?, ?, ?, ?, ?)")
       .run(khoa, vai, String(chu), bay, token ?? null, nguon ?? null);
+    this.sauGhi?.(kenh, ma, { vai, chu: String(chu), ten: ten ?? this.cuoc(khoa)?.ten });
     return khoa;
   }
 
@@ -143,7 +144,7 @@ export class HopThu {
       let nho = {}; try { nho = JSON.parse(r.ghi_nho || "{}"); } catch {}
       const i = r.khoa.indexOf(":");
       return { khoa: r.khoa, kenh: r.khoa.slice(0, i), ma: r.khoa.slice(i + 1), ten: nho["Tên"] || r.ten || "", nho,
-        the: docThe(r.the), giao: r.giao, luc: r.luc, coChat: r.loai != null };
+        the: docThe(r.the), giao: r.giao, luc: r.luc, coChat: r.loai != null, loai: r.loai };
     });
   }
   datXong(khoa, xong) { this.db.prepare("UPDATE cuoc SET xong = ? WHERE khoa = ?").run(xong ? 1 : 0, khoa); }

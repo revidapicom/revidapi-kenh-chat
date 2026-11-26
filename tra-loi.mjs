@@ -6,9 +6,11 @@
 // - Tìm không ra đoạn nào thì mới nhờ model viết thêm từ khoá đồng nghĩa (~60 token)
 //   rồi tìm lại: "ship ra Hà Nội" vẫn tìm thấy "giao hàng các tỉnh".
 // - Trả lời giới hạn max_tokens; chỉ dẫn hệ thống ngắn và cố định để cổng cache được.
+import { lenhViec } from "./bao-cao-chu.mjs";
 import fs from "node:fs";
 import { boDau } from "./kho-tai-lieu.mjs";
 import { moRongLink, anhDataUri } from "./noi-dung.mjs";
+import { thuTuModel, laKhongBan, ghiKhongBan, vuaKhongBan, cauLui } from "./model-ban.mjs";
 
 const LICH_SU_TOI_DA = 6;
 const CHU_MOI_TIN = 500;
@@ -39,6 +41,7 @@ export class BoNao {
   // Mọi lượt AI đi qua /v1/kenh-chat/* của RevidAPI: cách dựng prompt, chống bịa, mở rộng
   // từ khoá nằm trên máy chủ RevidAPI. Máy này chỉ gửi tin nhắn + vài đoạn tài liệu đã tìm sẵn.
   async goiKenh(ch, duong, than, hanMs) {
+    if (!ch.khoa) throw new Error("Chưa có API key RevidAPI — dán key ở trang quản trị.");
     const r = await fetch(ch.coSo.replace(/\/$/, "") + "/v1/kenh-chat/" + duong, {
       method: "POST",
       headers: { Authorization: "Bearer " + ch.khoa, "Content-Type": "application/json" },
@@ -66,6 +69,9 @@ export class BoNao {
         if (moi.length > doan.length) doan = moi;
       } catch { /* mở rộng hỏng/chậm thì dùng kết quả cũ — không bắt khách chờ */ }
     }
+    // Giá/tồn thật từ bảng Kho của bảng quản lý — đứng đầu, vì khách hỏi giá nhiều nhất.
+    const hang = this.erp?.timHang(cau);
+    if (hang) doan = [{ nguon: hang.nguon, chu: hang.chu }, ...doan].slice(0, 4);
     return { doan, token };
   }
 
@@ -114,11 +120,11 @@ export class BoNao {
     const truoc = this.hopThu.ganNhat(khoa, 4).slice(0, -1).reverse().find((t) => t.vai === "khach")?.chu || "";
     const tinTim = laCauCut(tinVao) && truoc ? `${truoc.replace(/https?:\/\/\S+|\[\d ảnh\]/g, " ").slice(0, 300)} ${tinVao}` : tinVao;
     // Câu hỏi chung, không ảnh/link, không phụ thuộc câu trước → dùng lại câu trả lời cũ, 0 token.
-    const khoaDem = !anh.length && !lk.anh.length && lk.chu === chu && !laCauCut(tinVao) ? boDau(tinVao.toLowerCase()).replace(/[^a-z0-9]+/g, " ").trim() + "|" + this.kho.danhSach().map((d) => d.ten + d.kyTu).join(",") : null;
+    const khoaDem = !anh.length && !lk.anh.length && lk.chu === chu && !laCauCut(tinVao) ? boDau(tinVao.toLowerCase()).replace(/[^a-z0-9]+/g, " ").trim() + "|" + this.kho.danhSach().map((d) => d.ten + d.kyTu).join(",") + "|" + (this.erp?.phienBan() || 0) : null;
     const daDem = khoaDem && this.boDem.get(khoaDem);
     if (daDem && Date.now() - daDem.luc < 6 * 3600e3) return this.ghiBot(khoa, daDem.chu, { token: 0, nguon: "nhớ đệm" });
     const { doan, token: tokenTim } = tinTim ? await this.timTaiLieu(ch, tinTim, kenh) : { doan: [], token: 0 };
-    const coKho = this.kho.danhSach().length > 0;
+    const coKho = this.kho.danhSach().length > 0 || (this.erp?.hang().length || 0) > 0;
     const laCauHoi = /\?|(?<!\p{L})(?:không|ko|k|chưa|gì|nào|sao|bao nhiêu|bao lâu|mấy|đâu|có .+ ko)(?!\p{L})/iu.test(tinVao);
     if (coKho && !doan.length && laCauHoi) {
       this.hopThu.ghiHoc(tinVao, "", "thieu", khoa);   // chủ bổ sung → bot học
@@ -158,12 +164,19 @@ export class BoNao {
     try {
       // Khách chờ tối đa ~12 giây: nguồn đôi khi trễ 30 giây+. Quá hạn thì thử một lần bằng
       // model dự phòng do chủ bot chọn (Cách trả lời → Nâng cao).
-      let r;
-      try {
-        r = await this.goiKenh(ch, "tra-loi", than(ch.model), (ch.hanGiay || 12) * 1000);
-      } catch (e) {
-        if (e.ma || !ch.modelDuPhong || ch.modelDuPhong === ch.model) throw e;
-        r = await this.goiKenh(ch, "tra-loi", than(ch.modelDuPhong), 30000);
+      // Model ngừng bán (cổng trả 404 "Không bán model") thì lùi sang model kế tiếp còn bán, không để bot im.
+      let r, dung;
+      const dsModel = thuTuModel(ch.model, ch.modelDuPhong);
+      let conLuotCham = ch.modelDuPhong && ch.modelDuPhong !== ch.model ? 1 : 0;
+      for (const [i, m] of dsModel.entries()) {
+        try {
+          r = await this.goiKenh(ch, "tra-loi", than(m), i === 0 ? (ch.hanGiay || 12) * 1000 : 30000); dung = m; break;
+        } catch (e) {
+          if (laKhongBan(e)) { ghiKhongBan(m); if (i < dsModel.length - 1) continue; }
+          // quá hạn/mạng lỗi/nguồn quá tải (429, 5xx): thử thêm đúng một model (như trước)
+          else if ((!e.ma || e.ma === 429 || e.ma >= 500) && conLuotCham-- > 0) continue;
+          throw e;
+        }
       }
       // Máy chủ cho model ghi thêm điều mới biết về khách vào dòng [[NHO: Khoá=giá trị; ...]] — tách ra, không gửi khách.
       const m = /\[\[NHO:([\s\S]*?)\]\]/.exec(r.chu);
@@ -176,7 +189,8 @@ export class BoNao {
         }
         if (Object.keys(them).length) this.hopThu.ghiNho(nguoi, them);
       }
-      this.loiGoi = "";
+      const bo = [ch.model, ch.modelDuPhong].filter((m) => m && m !== dung && vuaKhongBan(m));
+      this.loiGoi = bo.length ? cauLui([...new Set(bo)], dung) : "";
       if (!r.chu) return null;
       if (coKho && doan.length && /chưa có thông tin|không có thông tin|chưa rõ|để em (?:kiểm tra|báo)/iu.test(r.chu))
       { this.hopThu.ghiHoc(tinVao, "", "thieu", khoa);   // tìm thấy đoạn nhưng không đúng ý → vẫn là chỗ tài liệu thiếu
@@ -189,7 +203,9 @@ export class BoNao {
       return this.ghiBot(khoa, r.chu, { token: r.token + tokenTim, nguon: [...new Set(doan.map((d) => d.nguon))].join(", ") });
     } catch (e) {
       this.ghiNhatKy({ kenh, cuoc: ma, vao: chu, loi: e.message });
-      if (e.ma === 403) { this.loiGoi = e.message; return null; }   // key không thuộc gói Pro: bot im, panel báo
+      this.loiCuoi = e.message;   // trang "Thử bot" đọc để báo lý do thay vì im lặng
+      if (e.ma === 403) { this.loiGoi = e.message; return null; }
+      if (laKhongBan(e)) this.loiGoi = "Không model nào trong Cách trả lời còn bán: " + e.message;   // key không thuộc gói Pro: bot im, panel báo
       return e.ma === 402 ? null : this.ghiBot(khoa, ch.khiLoi);
     }
   }
@@ -214,7 +230,7 @@ export class BoNao {
     this.ve.ds[so] = mo ? { ...mo[1], hoi: mo[1].hoi + "\n" + hoi } : { khoa, hoi, ten: ten || "", luc: Date.now() };
     this.luuVe();
     const [kenh] = khoa.split(":");
-    const tenKenh = { zalo: "Zalo", "zalo-oa": "Zalo OA", fb: "Fanpage", telegram: "Telegram", web: "Web" }[kenh] || kenh;
+    const tenKenh = { zalo: "Zalo", zalo2: "Zalo 2", zalo3: "Zalo 3", "zalo-oa": "Zalo OA", fb: "Fanpage", telegram: "Telegram", web: "Web" }[kenh] || kenh;
     try {
       await this.guiQua(bc.kenh, bc.ma, `#${so} · ${ten || "Khách"} (${tenKenh}) hỏi:\n${hoi.slice(0, 600)}\n\nTrả lời khách: gõ #${so} rồi nội dung.`);
       return true;
@@ -231,8 +247,20 @@ export class BoNao {
       this.ghiCauHinh({ baoChu: { kenh, ma: String(ma), ten: ten || "", luc: Date.now() } });
       return "Đã nối. Từ giờ câu khách hỏi mà bot chưa trả lời được sẽ gửi về đây kèm số #. Trả lời khách bằng cách gõ: #số nội dung";
     }
-    const bc = ch.baoChu;
-    if (!bc || bc.kenh !== kenh || bc.ma !== String(ma)) return undefined;
+    const bc = ch.baoChu, laChu = bc && bc.kenh === kenh && bc.ma === String(ma);
+    // Nhân viên tự nối: "#toi NV01" (mã nhân viên trên bảng Nhân sự). Sau đó dùng #ds, #xong cho việc của mình.
+    const toi = this.erp && /^#\s?t[oôố]i\s+(\S+)$/i.exec(chu.trim());
+    if (toi && !laChu) {
+      const nv = this.erp.docHet("revidapi-nhansu", "nhanVien").find((n) => String(n.ma || "").toUpperCase() === toi[1].toUpperCase());
+      if (!nv) return `Không thấy nhân viên mã ${toi[1]}. Hỏi chủ mã của mình trên bảng Nhân sự.`;
+      this.ghiCauHinh({ nvKenh: { ...(ch.nvKenh || {}), [nv.id]: { kenh, ma: String(ma), luc: Date.now() } } });
+      return `Chào ${nv.ten}. Từ giờ việc chủ giao và nhắc hạn sẽ gửi về đây. Gõ #ds xem việc của mình, #xong <mã> khi xong.`;
+    }
+    const nvId = !laChu && Object.entries(ch.nvKenh || {}).find(([, k]) => k.kenh === kenh && k.ma === String(ma))?.[0];
+    if (!laChu && !nvId) return undefined;
+    const kq = this.erp ? lenhViec(this.erp, chu, Date.now(), nvId || null) : null;
+    if (kq) return this.baoViec(kq, nvId, ch);
+    if (!laChu) return /^#/.test(chu.trim()) ? "Gõ #ds xem việc của mình, #xong <mã> khi xong." : undefined;
     const m = /^#\s?(\d{3,6})\s+([\s\S]+)$/.exec(chu.trim());
     if (!m) return /^#/.test(chu.trim()) ? "Gõ đúng dạng: #số nội dung (ví dụ: #1001 Dạ bên em có ship COD ạ)" : null;
     const v = this.ve.ds[m[1]];
@@ -247,6 +275,15 @@ export class BoNao {
       v.xong = true; this.luuVe();
       return `Đã gửi cho ${v.ten || "khách"} (#${m[1]}). Câu này đã vào mục chờ duyệt để bot học.`;
     }).catch((e) => `Chưa gửi được cho khách #${m[1]}: ${e.message}`);
+  }
+
+  // Sau lệnh việc: báo người được giao (chủ giao) hoặc báo chủ (nhân viên đóng việc). Lỗi gửi không chặn câu trả lời.
+  baoViec(kq, nvId, ch) {
+    if (typeof kq === "string") return kq;
+    const v = kq.viec, k = !nvId && v.nguoiId && (ch.nvKenh || {})[v.nguoiId], bc = ch.baoChu;
+    if (k && /^Đã tạo/.test(kq.tra)) this.guiQua?.(k.kenh, k.ma, `📌 Việc mới từ chủ: ${v.ten}${v.han ? " (hạn " + v.han.split("-").reverse().slice(0, 2).join("/") + ")" : ""}. Xong gõ: #xong ${String(v.id).slice(-4)}`).catch(() => {});
+    if (nvId && bc?.kenh) this.guiQua?.(bc.kenh, bc.ma, `✅ ${this.erp.docHet("revidapi-nhansu", "nhanVien").find((n) => n.id === nvId)?.ten || "Nhân viên"} báo xong: ${v.ten}`).catch(() => {});
+    return kq.tra + (k ? " Đã báo cho người nhận." : !nvId && v.nguoiId && /^Đã tạo/.test(kq.tra) ? " (Người này chưa nối chat nên chưa được báo.)" : "");
   }
 
   ghiBot(khoa, chu, them = {}) {

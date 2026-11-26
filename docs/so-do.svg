@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="14">
+  <rect width="900" height="300" fill="#ffffff"/>
+  <defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/></marker></defs>
+  <g fill="#f3f4f6" stroke="#d1d5db">
+    <rect x="20" y="40" width="190" height="220" rx="12"/>
+    <rect x="330" y="40" width="240" height="220" rx="12" fill="#ecfdf3" stroke="#86c79a"/>
+    <rect x="690" y="90" width="190" height="120" rx="12" fill="#eef2ff" stroke="#a5b4fc"/>
+  </g>
+  <text x="115" y="70" text-anchor="middle" font-weight="700" fill="#111827">Khách nhắn tin</text>
+  <g fill="#374151" text-anchor="middle"><text x="115" y="105">Zalo cá nhân / Zalo OA</text><text x="115" y="135">Facebook Fanpage</text><text x="115" y="165">Telegram</text><text x="115" y="195">Khung chat website</text><text x="115" y="225">Đơn WooCommerce</text></g>
+  <text x="450" y="70" text-anchor="middle" font-weight="700" fill="#14532d">Kênh Chat (máy bạn / VPS)</text>
+  <g fill="#1f2937" text-anchor="middle"><text x="450" y="105">Hộp thư chung + nhân viên</text><text x="450" y="135">Kho tài liệu (PDF, DOCX, link)</text><text x="450" y="165">Token kênh, lịch sử chat</text><text x="450" y="195">→ chỉ nằm trên máy bạn</text><text x="450" y="230" font-size="12" fill="#6b7280">Không có API key = bot không chạy</text></g>
+  <text x="785" y="125" text-anchor="middle" font-weight="700" fill="#312e81">RevidAPI</text>
+  <g fill="#374151" text-anchor="middle"><text x="785" y="155">Model AI trả lời</text><text x="785" y="180" font-size="12">trừ credit theo tin</text></g>
+  <g stroke="#4b5563" stroke-width="2" fill="none" marker-end="url(#m)"><path d="M212,130 H326"/><path d="M572,130 H686"/><path d="M686,170 H572"/><path d="M326,170 H212"/></g>
+  <g font-size="12" fill="#4b5563" text-anchor="middle"><text x="269" y="122">tin mới</text><text x="269" y="188">trả lời</text><text x="629" y="122">câu hỏi + 3 đoạn tài liệu</text><text x="629" y="188">câu trả lời</text></g>
+</svg>

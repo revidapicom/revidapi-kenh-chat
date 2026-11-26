@@ -1,6 +1,6 @@
 {
   "name": "revidapi-kenh-chat",
-  "version": "1.5.2",
+  "version": "1.5.8",
   "private": true,
   "type": "module",
   "description": "Chatbot AI cho Zalo cá nhân, Zalo OA, Facebook Fanpage, Telegram — trả lời bằng tài liệu của bạn qua RevidAPI",
